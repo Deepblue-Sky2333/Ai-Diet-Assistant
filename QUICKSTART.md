@@ -15,7 +15,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone <repository-url>
+git clone https://github.com/Deepblue-Sky2333/Ai-Diet-Assistant/
 cd ai-diet-assistant
 
 # 2. 运行一键安装脚本
