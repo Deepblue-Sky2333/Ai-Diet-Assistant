@@ -42,6 +42,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadSettings = async () => {
@@ -49,22 +50,30 @@ export default function SettingsPage() {
     try {
       const result = await apiClient.getSettings();
       if (result.code === 0 && result.data) {
-        if (result.data.ai_config) {
-          // 后端应该返回掩码版本的密钥
-          const apiKey = result.data.ai_config.api_key_masked || '';
+        const data = result.data as {
+          ai_config?: {
+            provider?: string;
+            api_key_masked?: string;
+            api_endpoint?: string;
+          };
+          user_preferences?: typeof preferences;
+        };
+        
+        if (data.ai_config) {
+          const apiKey = data.ai_config.api_key_masked || '';
           setAiSettings({
-            provider: result.data.ai_config.provider || 'openai',
-            api_key: '', // 不存储实际密钥
-            api_key_masked: apiKey, // 存储掩码版本用于显示
-            api_endpoint: result.data.ai_config.api_endpoint || '',
+            provider: data.ai_config.provider || 'openai',
+            api_key: '',
+            api_key_masked: apiKey,
+            api_endpoint: data.ai_config.api_endpoint || '',
           });
         }
-        if (result.data.user_preferences) {
-          setPreferences(result.data.user_preferences);
+        if (data.user_preferences) {
+          setPreferences(data.user_preferences);
         }
       }
-    } catch (error) {
-      console.error('[v0] Load settings error:', error);
+    } catch {
+      // Error handled silently
     } finally {
       setLoading(false);
     }
@@ -107,7 +116,7 @@ export default function SettingsPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to save AI settings',
@@ -134,7 +143,7 @@ export default function SettingsPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to test AI connection',
@@ -163,7 +172,7 @@ export default function SettingsPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to save preferences',
@@ -206,7 +215,7 @@ export default function SettingsPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to change password',

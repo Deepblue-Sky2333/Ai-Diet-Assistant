@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Pencil, Trash2, Search, Upload } from '@/components/icons';
+import { Loader2, Plus, Pencil, Trash2, Search, Upload } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const CATEGORIES = [
@@ -62,26 +62,17 @@ export default function SupermarketPage() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      loadFoods();
-    }
-  }, [page, category, mounted]);
-
-  const loadFoods = async () => {
+  const loadFoods = React.useCallback(async () => {
     setLoading(true);
     try {
-      console.log('[v0] Loading foods - page:', page, 'category:', category);
       const result = await apiClient.getFoods(page, 20, category === 'all' ? '' : category);
-      console.log('[v0] Foods loaded:', result);
-      if (result.code === 0 && result.data) {
-        setFoods(result.data);
+      if (result.code === 0 && result.data && Array.isArray(result.data)) {
+        setFoods(result.data as Food[]);
         if (result.pagination) {
           setTotalPages(result.pagination.total_pages);
         }
       }
-    } catch (error) {
-      console.error('[v0] Load foods error:', error);
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to load foods',
@@ -90,7 +81,13 @@ export default function SupermarketPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, category, toast]);
+
+  useEffect(() => {
+    if (mounted) {
+      loadFoods();
+    }
+  }, [mounted, loadFoods]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +127,7 @@ export default function SupermarketPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to save food',
@@ -173,7 +170,7 @@ export default function SupermarketPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to delete food',

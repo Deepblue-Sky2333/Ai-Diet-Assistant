@@ -102,7 +102,7 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Welcome back! Here's your nutrition overview.
+          Welcome back! Here&apos;s your nutrition overview.
         </p>
       </div>
 

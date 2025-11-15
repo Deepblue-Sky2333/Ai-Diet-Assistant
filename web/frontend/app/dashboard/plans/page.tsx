@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Check, Trash2, Sparkles, Calendar, Utensils } from 'lucide-react';
+import { Loader2, Check, Trash2, Sparkles, Calendar, Utensils } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 
@@ -50,11 +50,11 @@ export default function PlansPage() {
     setLoading(true);
     try {
       const result = await apiClient.getPlans();
-      if (result.code === 0 && result.data) {
-        setPlans(result.data);
+      if (result.code === 0 && result.data && Array.isArray(result.data)) {
+        setPlans(result.data as Plan[]);
       }
-    } catch (error) {
-      console.error('[v0] Load plans error:', error);
+    } catch {
+      // Error handled silently
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ export default function PlansPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to generate plan',
@@ -112,7 +112,7 @@ export default function PlansPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to complete plan',
@@ -140,7 +140,7 @@ export default function PlansPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to delete plan',

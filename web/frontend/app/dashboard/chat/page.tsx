@@ -36,11 +36,11 @@ export default function ChatPage() {
     setLoading(true);
     try {
       const result = await apiClient.getChatHistory(1, 50);
-      if (result.code === 0 && result.data) {
-        setMessages(result.data);
+      if (result.code === 0 && result.data && Array.isArray(result.data)) {
+        setMessages(result.data as Message[]);
       }
-    } catch (error) {
-      console.error('[v0] Load chat history error:', error);
+    } catch {
+      // Error handled silently
     } finally {
       setLoading(false);
     }
@@ -71,10 +71,11 @@ export default function ChatPage() {
       const result = await apiClient.chat(input);
       
       if (result.code === 0 && result.data) {
+        const data = result.data as { message_id?: number; message: string };
         const assistantMessage: Message = {
-          id: result.data.message_id || Date.now() + 1,
+          id: data.message_id || Date.now() + 1,
           role: 'assistant',
-          content: result.data.message,
+          content: data.message,
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
@@ -85,7 +86,7 @@ export default function ChatPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to send message',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,19 +22,23 @@ const MEAL_TYPES = [
   { value: 'snack', label: 'Snack', icon: Cookie, color: 'rose' },
 ];
 
+interface FoodItem {
+  id: number;
+  name: string;
+  food_id?: number;
+  food_name?: string;
+  portion?: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 interface Meal {
   id: number;
   date: string;
   meal_type: string;
-  foods: Array<{
-    food_id: number;
-    food_name: string;
-    portion: number;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  }>;
+  foods: FoodItem[];
   total_calories: number;
   total_protein: number;
   total_carbs: number;
@@ -43,7 +47,7 @@ interface Meal {
 
 export default function MealsPage() {
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [foods, setFoods] = useState<any[]>([]);
+  const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -55,36 +59,38 @@ export default function MealsPage() {
     food_items: [{ food_id: '', portion: '' }],
   });
 
-  useEffect(() => {
-    loadMeals();
-    loadFoods();
-  }, [selectedDate]);
-
-  const loadMeals = async () => {
+  const loadMeals = React.useCallback(async () => {
     setLoading(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const result = await apiClient.getMeals(dateStr);
-      if (result.code === 0 && result.data) {
-        setMeals(result.data);
+      if (result.code === 0 && result.data && Array.isArray(result.data)) {
+        setMeals(result.data as Meal[]);
       }
-    } catch (error) {
-      console.error('[v0] Load meals error:', error);
+    } catch {
+      // Error handled silently
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
 
-  const loadFoods = async () => {
+  const loadFoods = React.useCallback(async () => {
     try {
       const result = await apiClient.getFoods(1, 100);
-      if (result.code === 0 && result.data) {
-        setFoods(result.data);
+      if (result.code === 0 && result.data && Array.isArray(result.data)) {
+        setFoods(result.data as FoodItem[]);
       }
-    } catch (error) {
-      console.error('[v0] Load foods error:', error);
+    } catch {
+      // Error handled silently
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadMeals();
+    loadFoods();
+  }, [loadMeals, loadFoods]);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +132,7 @@ export default function MealsPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to log meal',
@@ -154,7 +160,7 @@ export default function MealsPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to delete meal',

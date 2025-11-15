@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,13 +12,73 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 
+interface NutritionValue {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+interface DailyNutritionData {
+  actual: NutritionValue;
+  goal: NutritionValue;
+}
+
+interface MonthlyNutritionData {
+  date: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 export default function NutritionPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'daily' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [dailyData, setDailyData] = useState<any>(null);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [dailyData, setDailyData] = useState<DailyNutritionData | null>(null);
+  const [monthlyData, setMonthlyData] = useState<MonthlyNutritionData[]>([]);
   const { toast } = useToast();
+
+  const loadDailyNutrition = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const result = await apiClient.getDailyNutrition(dateStr);
+      if (result.code === 0 && result.data) {
+        setDailyData(result.data as DailyNutritionData);
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to load nutrition data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate, toast]);
+
+  const loadMonthlyNutrition = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth() + 1;
+      const result = await apiClient.getMonthlyNutrition(year, month);
+      if (result.code === 0 && result.data && Array.isArray(result.data)) {
+        setMonthlyData(result.data as MonthlyNutritionData[]);
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to load nutrition data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate, toast]);
 
   useEffect(() => {
     if (view === 'daily') {
@@ -26,48 +86,9 @@ export default function NutritionPage() {
     } else {
       loadMonthlyNutrition();
     }
-  }, [view, selectedDate]);
+  }, [view, loadDailyNutrition, loadMonthlyNutrition]);
 
-  const loadDailyNutrition = async () => {
-    setLoading(true);
-    try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      const result = await apiClient.getDailyNutrition(dateStr);
-      if (result.code === 0 && result.data) {
-        setDailyData(result.data);
-      }
-    } catch (error) {
-      console.error('[v0] Load daily nutrition error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load nutrition data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const loadMonthlyNutrition = async () => {
-    setLoading(true);
-    try {
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth() + 1;
-      const result = await apiClient.getMonthlyNutrition(year, month);
-      if (result.code === 0 && result.data) {
-        setMonthlyData(result.data);
-      }
-    } catch (error) {
-      console.error('[v0] Load monthly nutrition error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load nutrition data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const chartData = view === 'daily' && dailyData ? [
     { name: 'Protein', actual: dailyData.actual?.protein || 0, goal: dailyData.goal?.protein || 0 },

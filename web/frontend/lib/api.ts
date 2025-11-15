@@ -6,11 +6,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
     ? '/api/v1'  // 生产环境使用相对路径
     : 'http://localhost:9090/api/v1'); // 开发环境使用完整 URL
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DEMO_MODE = typeof window !== 'undefined' 
   ? process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
   : false;
-
-console.log('[v0] API Client initialized - Demo Mode:', DEMO_MODE, 'Base URL:', API_BASE_URL);
 
 interface ApiResponse<T> {
   code: number;
@@ -37,7 +36,6 @@ class ApiClient {
     this.demoMode = typeof window !== 'undefined' 
       ? process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
       : false;
-    console.log('[v0] ApiClient constructor - Demo mode set to:', this.demoMode);
   }
 
   /**
@@ -80,7 +78,6 @@ class ApiClient {
     }
     
     const token = localStorage.getItem('access_token');
-    console.log('[v0] Getting auth headers, token exists:', !!token);
     return {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -117,6 +114,7 @@ class ApiClient {
     return result;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async handleDemoRequest<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -228,17 +226,12 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    console.log('[v0] Request called - Demo mode:', this.demoMode, 'Endpoint:', endpoint);
-    
     if (this.demoMode) {
-      console.log('[v0] Demo mode active, returning mock response');
       return this.handleDemoRequest<T>(endpoint, options);
     }
 
-    console.log('[v0] Making real API call (demo mode is OFF)');
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      console.log('[v0] API request:', { url, method: options.method || 'GET' });
       
       const response = await this.fetchWithTimeout(url, {
         ...options,
@@ -252,9 +245,6 @@ class ApiClient {
 
       return await this.handleResponse<T>(response);
     } catch (error) {
-      console.error('[v0] API request error:', error);
-      
-      // 处理超时错误
       if (error instanceof Error && error.message.startsWith('Request timeout')) {
         throw new Error('Request timeout. Please check your network connection and try again.');
       }
@@ -280,7 +270,6 @@ class ApiClient {
   }
 
   async login(username: string, password: string) {
-    console.log('[v0] Login method called, demo mode:', this.demoMode);
     const result = await this.request<{
       access_token: string;
       refresh_token: string;
@@ -291,7 +280,6 @@ class ApiClient {
     });
 
     if (result.code === 0 && result.data) {
-      console.log('[v0] Login successful, storing tokens');
       if (typeof window !== 'undefined') {
         localStorage.setItem('access_token', result.data.access_token);
         localStorage.setItem('refresh_token', result.data.refresh_token);
@@ -302,7 +290,6 @@ class ApiClient {
   }
 
   async loginWithTestAccount() {
-    console.log('[v0] loginWithTestAccount called, demo mode:', this.demoMode);
     const result = await this.request<{
       access_token: string;
       refresh_token: string;
@@ -313,7 +300,6 @@ class ApiClient {
     });
 
     if (result.code === 0 && result.data) {
-      console.log('[v0] Test login successful, storing tokens');
       if (typeof window !== 'undefined') {
         localStorage.setItem('access_token', result.data.access_token);
         localStorage.setItem('refresh_token', result.data.refresh_token);
@@ -324,24 +310,19 @@ class ApiClient {
   }
 
   async refreshToken(): Promise<boolean> {
-    // 如果已经有刷新请求在进行中，返回同一个Promise
     if (this.refreshPromise) {
-      console.log('[v0] Token refresh already in progress, reusing existing promise');
       return this.refreshPromise;
     }
 
-    // 创建新的刷新Promise并缓存
     this.refreshPromise = (async () => {
       try {
         if (typeof window === 'undefined') return false;
         
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) {
-          console.log('[v0] No refresh token found');
           return false;
         }
 
-        console.log('[v0] Attempting token refresh');
         const response = await this.fetchWithTimeout(`${this.baseUrl}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -351,18 +332,13 @@ class ApiClient {
         const result = await response.json();
 
         if (result.code === 0 && result.data) {
-          console.log('[v0] Token refresh successful');
           localStorage.setItem('access_token', result.data.access_token);
           return true;
         }
-        console.log('[v0] Token refresh failed');
         return false;
-      } catch (error) {
-        console.error('[v0] Token refresh error:', error);
+      } catch {
         return false;
       } finally {
-        // 刷新完成后清除缓存，允许下次刷新
-        console.log('[v0] Clearing refresh promise cache');
         this.refreshPromise = null;
       }
     })();
@@ -371,7 +347,6 @@ class ApiClient {
   }
 
   async logout() {
-    console.log('[v0] Logging out');
     await this.request('/auth/logout', { method: 'POST' });
     if (typeof window !== 'undefined') {
       localStorage.clear();
