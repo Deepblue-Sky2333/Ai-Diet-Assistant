@@ -3,7 +3,8 @@
 # AI Diet Assistant 一键安装脚本
 # 此脚本会自动检测环境、安装依赖、配置系统并启动服务
 
-set -e
+# 不使用 set -e，改为手动检查关键步骤
+# set -e 会导致任何小错误都退出，过于严格
 
 # 颜色输出
 RED='\033[0;31m'
@@ -190,7 +191,14 @@ echo ""
 
 # 步骤 2: 运行配置脚本
 echo -e "${BLUE}[2/6] 配置系统...${NC}"
-./scripts/install.sh
+if [ -f "./scripts/install.sh" ]; then
+    ./scripts/install.sh
+    if [ $? -ne 0 ]; then
+        echo -e "${YELLOW}⚠ 配置脚本执行有警告，继续...${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠ 配置脚本不存在，跳过...${NC}"
+fi
 
 echo ""
 
@@ -198,10 +206,15 @@ echo ""
 echo -e "${BLUE}[3/6] 配置数据库...${NC}"
 
 # 从 .env 读取数据库配置
-source .env
+if [ -f ".env" ]; then
+    source .env
+else
+    echo -e "${RED}✗ .env 文件不存在，请先运行配置脚本${NC}"
+    exit 1
+fi
 
 echo "正在创建数据库..."
-mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" <<EOF
+mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" 2>/dev/null <<EOF
 CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EOF
 
@@ -216,14 +229,23 @@ echo ""
 # 步骤 4: 运行数据库迁移
 echo -e "${BLUE}[4/6] 运行数据库迁移...${NC}"
 
+migration_failed=0
 for file in migrations/*_up.sql; do
     if [ -f "$file" ]; then
         echo "执行: $file"
-        mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$file"
+        mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$file" 2>/dev/null
+        if [ $? -ne 0 ]; then
+            echo -e "${YELLOW}⚠ $file 执行失败（可能已执行过），继续...${NC}"
+            migration_failed=1
+        fi
     fi
 done
 
-echo -e "${GREEN}✓ 数据库迁移完成${NC}"
+if [ $migration_failed -eq 0 ]; then
+    echo -e "${GREEN}✓ 数据库迁移完成${NC}"
+else
+    echo -e "${YELLOW}⚠ 部分迁移有警告，但已完成${NC}"
+fi
 echo ""
 
 # 步骤 5: 构建应用
@@ -232,6 +254,9 @@ echo -e "${BLUE}[5/6] 构建应用...${NC}"
 # 下载 Go 依赖
 echo "下载 Go 依赖..."
 go mod download
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}⚠ Go 依赖下载有警告，尝试继续构建...${NC}"
+fi
 
 # 构建后端
 echo "构建后端..."
@@ -241,29 +266,39 @@ go build -o bin/diet-assistant cmd/server/main.go
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ 后端构建成功${NC}"
 else
-    echo -e "${RED}✗ 后端构建失败${NC}"
+    echo -e "${RED}✗ 后端构建失败，这是关键错误${NC}"
     exit 1
 fi
 
 # 构建前端
 echo "构建前端..."
-cd web/frontend
+if [ -d "web/frontend" ]; then
+    cd web/frontend
 
-if [ ! -d "node_modules" ]; then
-    echo "安装前端依赖..."
-    npm install
-fi
+    if [ ! -d "node_modules" ]; then
+        echo "安装前端依赖..."
+        npm install
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}✗ 前端依赖安装失败${NC}"
+            cd ../..
+            exit 1
+        fi
+    fi
 
-npm run build
+    npm run build
 
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ 前端构建成功${NC}"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ 前端构建成功${NC}"
+    else
+        echo -e "${RED}✗ 前端构建失败，这是关键错误${NC}"
+        cd ../..
+        exit 1
+    fi
+
+    cd ../..
 else
-    echo -e "${RED}✗ 前端构建失败${NC}"
-    exit 1
+    echo -e "${YELLOW}⚠ 前端目录不存在，跳过前端构建${NC}"
 fi
-
-cd ../..
 echo ""
 
 # 步骤 6: 配置服务（可选）

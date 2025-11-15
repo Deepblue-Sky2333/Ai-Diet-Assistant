@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yourusername/ai-diet-assistant/internal/app"
-	"github.com/yourusername/ai-diet-assistant/internal/config"
-	"github.com/yourusername/ai-diet-assistant/internal/utils"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/app"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"go.uber.org/zap"
 )
 

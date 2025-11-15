@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"github.com/yourusername/ai-diet-assistant/internal/config"
-	"github.com/yourusername/ai-diet-assistant/internal/database"
-	"github.com/yourusername/ai-diet-assistant/internal/utils"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/database"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"go.uber.org/zap"
 )
 

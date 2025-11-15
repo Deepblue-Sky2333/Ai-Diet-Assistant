@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourusername/ai-diet-assistant/internal/config"
-	"github.com/yourusername/ai-diet-assistant/internal/database"
-	"github.com/yourusername/ai-diet-assistant/internal/handler"
-	"github.com/yourusername/ai-diet-assistant/internal/model"
-	"github.com/yourusername/ai-diet-assistant/internal/repository"
-	"github.com/yourusername/ai-diet-assistant/internal/router"
-	"github.com/yourusername/ai-diet-assistant/internal/service"
-	"github.com/yourusername/ai-diet-assistant/internal/utils"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/database"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/handler"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/router"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"go.uber.org/zap"
 )
 

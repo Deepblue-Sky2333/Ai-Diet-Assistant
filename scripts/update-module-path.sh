@@ -46,11 +46,23 @@ echo ""
 if [[ ! "$MODULE_PATH" =~ ^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$ ]]; then
     echo -e "${YELLOW}Warning: Module path format may be invalid: $MODULE_PATH${NC}"
     echo "Expected format: domain.com/username/repository"
-    read -p "Continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Aborted."
-        exit 1
+    
+    if [ -t 0 ]; then
+        # Interactive mode
+        read -p "Continue anyway? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 1
+        fi
+    else
+        # Non-interactive mode
+        echo "Running in non-interactive mode, continuing..."
+        read -t 1 REPLY || REPLY="y"
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            exit 1
+        fi
     fi
 fi
 
@@ -84,13 +96,24 @@ if [ "$OLD_MODULE_PATH" = "$MODULE_PATH" ]; then
     exit 0
 fi
 
-# Confirm with user
-echo -e "${YELLOW}This will update all Go files in the project.${NC}"
-read -p "Continue? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted."
-    exit 1
+# Confirm with user (unless running in non-interactive mode)
+if [ -t 0 ]; then
+    # Interactive mode
+    echo -e "${YELLOW}This will update all Go files in the project.${NC}"
+    read -p "Continue? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
+else
+    # Non-interactive mode (piped input)
+    echo -e "${YELLOW}Running in non-interactive mode, proceeding with update...${NC}"
+    read -t 1 REPLY || REPLY="y"
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
 fi
 
 echo ""
@@ -99,7 +122,13 @@ echo ""
 
 # Step 1: Update go.mod
 echo "1. Updating go.mod..."
-sed -i.bak "s|^module $OLD_MODULE_PATH|module $MODULE_PATH|" "$GO_MOD"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS 需要提供备份扩展名
+    sed -i '.bak' "s|^module $OLD_MODULE_PATH|module $MODULE_PATH|" "$GO_MOD"
+else
+    # Linux
+    sed -i.bak "s|^module $OLD_MODULE_PATH|module $MODULE_PATH|" "$GO_MOD"
+fi
 rm -f "$GO_MOD.bak"
 echo -e "   ${GREEN}✓${NC} go.mod updated"
 
@@ -110,7 +139,13 @@ FILE_COUNT=0
 
 for file in $GO_FILES; do
     if grep -q "$OLD_MODULE_PATH" "$file"; then
-        sed -i.bak "s|$OLD_MODULE_PATH|$MODULE_PATH|g" "$file"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '.bak' "s|$OLD_MODULE_PATH|$MODULE_PATH|g" "$file"
+        else
+            # Linux
+            sed -i.bak "s|$OLD_MODULE_PATH|$MODULE_PATH|g" "$file"
+        fi
         rm -f "$file.bak"
         FILE_COUNT=$((FILE_COUNT + 1))
     fi

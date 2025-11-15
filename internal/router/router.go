@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourusername/ai-diet-assistant/internal/config"
-	"github.com/yourusername/ai-diet-assistant/internal/handler"
-	"github.com/yourusername/ai-diet-assistant/internal/middleware"
-	"github.com/yourusername/ai-diet-assistant/internal/utils"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/handler"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/middleware"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -139,7 +139,7 @@ func setupFrontendRoutes(router *gin.Engine, cfg *config.Config, logger *zap.Log
 		// 开发模式提示
 		logger.Info("Frontend running in development mode",
 			zap.String("frontend_url", "http://localhost:3000"),
-			zap.String("backend_url", "http://localhost:"+cfg.Server.Port),
+			zap.Int("backend_port", cfg.Server.Port),
 		)
 	}
 }

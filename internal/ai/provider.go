@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/yourusername/ai-diet-assistant/internal/model"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 )
 
 // AIProvider defines the interface for AI service providers

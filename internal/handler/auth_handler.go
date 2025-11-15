@@ -4,9 +4,9 @@ import (
 	"errors"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourusername/ai-diet-assistant/internal/repository"
-	"github.com/yourusername/ai-diet-assistant/internal/service"
-	"github.com/yourusername/ai-diet-assistant/internal/utils"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 )
 
 // AuthHandler 认证处理器

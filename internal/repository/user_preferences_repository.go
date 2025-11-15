@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/yourusername/ai-diet-assistant/internal/model"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 )
 
 // UserPreferencesRepository 用户偏好仓储接口

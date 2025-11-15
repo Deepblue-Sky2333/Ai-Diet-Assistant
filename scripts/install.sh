@@ -183,16 +183,10 @@ while true; do
 done
 echo ""
 
-# 获取模块路径
+# 模块路径已固定
+MODULE_PATH="github.com/Deepblue-Sky2333/Ai-Diet-Assistant"
 echo -e "${BLUE}模块路径配置${NC}"
-echo "请输入 Go 模块路径（例如：github.com/username/ai-diet-assistant）："
-read -p "模块路径 [github.com/yourusername/ai-diet-assistant]: " MODULE_PATH
-MODULE_PATH=${MODULE_PATH:-github.com/yourusername/ai-diet-assistant}
-
-while ! validate_module_path "$MODULE_PATH"; do
-    read -p "模块路径: " MODULE_PATH
-done
-echo -e "${GREEN}✓ 模块路径已设置${NC}"
+echo -e "模块路径: ${GREEN}${MODULE_PATH}${NC}"
 echo ""
 
 # 获取服务器配置
@@ -479,29 +473,63 @@ if [ -f "$MODULE_CONF" ]; then
 fi
 
 # 在 module.conf 中更新 MODULE_PATH
-sed -i.tmp "s|^MODULE_PATH=.*|MODULE_PATH=${MODULE_PATH}|" "$MODULE_CONF" 2>/dev/null || \
-    echo "MODULE_PATH=${MODULE_PATH}" > "$MODULE_CONF"
-rm -f "${MODULE_CONF}.tmp"
-echo -e "${GREEN}✓ 模块路径配置已更新${NC}"
+# 使用更兼容的方式更新配置文件
+if grep -q "^MODULE_PATH=" "$MODULE_CONF" 2>/dev/null; then
+    # 如果存在，则替换
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS 需要提供备份扩展名
+        sed -i '' "s|^MODULE_PATH=.*|MODULE_PATH=${MODULE_PATH}|" "$MODULE_CONF"
+    else
+        # Linux
+        sed -i "s|^MODULE_PATH=.*|MODULE_PATH=${MODULE_PATH}|" "$MODULE_CONF"
+    fi
+else
+    # 如果不存在，则添加
+    echo "MODULE_PATH=${MODULE_PATH}" >> "$MODULE_CONF"
+fi
+echo -e "${GREEN}✓ 模块路径配置已更新为: ${MODULE_PATH}${NC}"
 
-# 运行 update-module-path.sh 脚本
-if [ -f "./scripts/update-module-path.sh" ]; then
+# 运行模块路径更新脚本
+if [ -f "./scripts/update-module-path-auto.sh" ]; then
     echo -e "${BLUE}正在运行模块路径更新脚本...${NC}"
     echo ""
     
-    # 使用自动 yes 响应运行脚本
-    if echo "y" | bash ./scripts/update-module-path.sh; then
+    # 使用自动更新脚本（无需交互）
+    if bash ./scripts/update-module-path-auto.sh "$MODULE_PATH"; then
         echo ""
         echo -e "${GREEN}✓ 模块路径更新成功${NC}"
     else
         echo ""
-        echo -e "${RED}✗ 模块路径更新失败${NC}"
-        echo "您可以手动运行：./scripts/update-module-path.sh"
+        echo -e "${YELLOW}⚠ 模块路径更新失败${NC}"
+        echo "您可以手动运行："
+        echo "  ./scripts/update-module-path-auto.sh $MODULE_PATH"
+        echo "或者："
+        echo "  ./scripts/update-module-path.sh"
+        VERIFICATION_FAILED=true
+    fi
+elif [ -f "./scripts/update-module-path.sh" ]; then
+    echo -e "${BLUE}正在运行模块路径更新脚本（交互模式）...${NC}"
+    echo ""
+    echo -e "${YELLOW}请按照提示确认更新${NC}"
+    
+    if bash ./scripts/update-module-path.sh; then
+        echo ""
+        echo -e "${GREEN}✓ 模块路径更新成功${NC}"
+    else
+        echo ""
+        echo -e "${YELLOW}⚠ 模块路径更新失败或被取消${NC}"
+        echo "您可以稍后手动运行：./scripts/update-module-path.sh"
         VERIFICATION_FAILED=true
     fi
 else
-    echo -e "${YELLOW}警告：未找到 update-module-path.sh 脚本${NC}"
-    echo "模块路径配置已保存但未应用到 Go 文件。"
+    echo -e "${YELLOW}警告：未找到模块路径更新脚本${NC}"
+    echo "模块路径配置已保存到 .kiro/module.conf"
+    echo "但未应用到 Go 文件。"
+    echo ""
+    echo "请手动更新："
+    echo "  1. go.mod 中的 module 声明"
+    echo "  2. 所有 .go 文件中的导入路径"
+    echo "  3. 运行 go mod tidy"
 fi
 echo ""
 

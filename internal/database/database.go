@@ -7,7 +7,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/yourusername/ai-diet-assistant/internal/config"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
 )
 
 var db *sql.DB

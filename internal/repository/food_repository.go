@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yourusername/ai-diet-assistant/internal/model"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 )
 
 // FoodRepository handles food data access operations
