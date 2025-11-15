@@ -33,7 +33,7 @@ AI Diet Assistant 是一个智能饮食管理系统，通过集成 AI 服务帮�
 
 ```bash
 # 1. 克隆项目
-git clone <repository-url>
+git clone https://github.com/Deepblue-Sky2333/Ai-Diet-Assistant/
 cd ai-diet-assistant
 
 # 2. 运行一键安装脚本
@@ -48,6 +48,8 @@ cd ai-diet-assistant
 - ✅ 配置系统服务（可选）
 
 安装完成后，访问：**http://localhost:9090**
+
+**详细说明：** 查看 [快速开始指南](QUICKSTART.md)
 
 #### 开发模式
 
@@ -64,8 +66,6 @@ cd web/frontend && npm run dev
 访问：
 - 前端：http://localhost:3000
 - 后端：http://localhost:9090
-
-**详细说明：** 查看 [快速开始指南](QUICKSTART.md)
 
 ### 🏗️ 技术栈
 
