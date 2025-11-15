@@ -1,0 +1,106 @@
+# ============================================
+# AI Diet Assistant - Cron Job Configuration
+# ============================================
+#
+# This file contains example cron job configurations for automated
+# maintenance tasks. Copy the relevant lines to your crontab.
+#
+# To edit your crontab:
+#   crontab -e
+#
+# To view your current crontab:
+#   crontab -l
+#
+# Cron format:
+#   * * * * * command
+#   │ │ │ │ │
+#   │ │ │ │ └─── Day of week (0-7, Sunday=0 or 7)
+#   │ │ │ └───── Month (1-12)
+#   │ │ └─────── Day of month (1-31)
+#   │ └───────── Hour (0-23)
+#   └─────────── Minute (0-59)
+#
+# ============================================
+
+# Set the project root directory (CHANGE THIS to your actual path)
+PROJECT_ROOT=/path/to/ai-diet-assistant
+
+# Set database password (or use .my.cnf for security)
+# DB_PASSWORD=your_database_password
+
+# ============================================
+# Data Cleanup Jobs
+# ============================================
+
+# Clean up login attempts (every Sunday at 2:00 AM)
+# Deletes records older than 30 days
+0 2 * * 0 cd $PROJECT_ROOT && ./scripts/cleanup-login-attempts.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# Clean up API logs (every Sunday at 3:00 AM)
+# Deletes records older than 90 days
+0 3 * * 0 cd $PROJECT_ROOT && ./scripts/cleanup-api-logs.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# Clean up API logs with archiving (alternative - every Sunday at 3:00 AM)
+# Archives logs before deletion for compliance/audit purposes
+# 0 3 * * 0 cd $PROJECT_ROOT && ./scripts/cleanup-api-logs.sh --archive >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# ============================================
+# Database Backup Jobs (if implemented)
+# ============================================
+
+# Daily database backup (every day at 1:00 AM)
+# Uncomment when backup script is implemented
+# 0 1 * * * cd $PROJECT_ROOT && ./scripts/backup.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# ============================================
+# Log Rotation (if not using lumberjack)
+# ============================================
+
+# Rotate application logs (every day at midnight)
+# Note: If using lumberjack in the application, this is not needed
+# 0 0 * * * cd $PROJECT_ROOT && find logs/ -name "*.log" -size +100M -exec gzip {} \; >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# ============================================
+# Health Check and Monitoring
+# ============================================
+
+# Check application health (every 5 minutes)
+# Uncomment if you want periodic health checks
+# */5 * * * * curl -f http://localhost:9090/health || echo "Health check failed at $(date)" >> $PROJECT_ROOT/logs/health-check.log
+
+# ============================================
+# Alternative Schedules
+# ============================================
+
+# More frequent cleanup (daily at 3:00 AM)
+# 0 3 * * * cd $PROJECT_ROOT && ./scripts/cleanup-login-attempts.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+# 0 4 * * * cd $PROJECT_ROOT && ./scripts/cleanup-api-logs.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# Less frequent cleanup (monthly on the 1st at 2:00 AM)
+# 0 2 1 * * cd $PROJECT_ROOT && ./scripts/cleanup-login-attempts.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+# 0 3 1 * * cd $PROJECT_ROOT && ./scripts/cleanup-api-logs.sh >> $PROJECT_ROOT/logs/cron.log 2>&1
+
+# ============================================
+# Notes
+# ============================================
+#
+# 1. Security: Store database password in environment variable or .my.cnf
+#    Example .my.cnf in user home directory:
+#    [client]
+#    password=your_password
+#
+# 2. Logging: All cron jobs redirect output to logs/cron.log
+#    Monitor this file for errors
+#
+# 3. Permissions: Ensure scripts are executable:
+#    chmod +x scripts/*.sh
+#
+# 4. Testing: Test scripts manually before adding to cron:
+#    cd /path/to/ai-diet-assistant && ./scripts/cleanup-login-attempts.sh
+#
+# 5. Monitoring: Set up alerts for cron job failures
+#    Consider using a monitoring service or email notifications
+#
+# 6. Timezone: Cron uses system timezone. Verify with: date
+#
+# ============================================
