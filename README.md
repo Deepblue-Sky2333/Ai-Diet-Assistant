@@ -5,8 +5,6 @@
 🍎 AI 驱动的个性化饮食计划助手系统
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat&logo=next.js)](https://nextjs.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -34,7 +32,7 @@ AI Diet Assistant 是一个智能饮食管理系统，通过集成 AI 服务帮�
 ```bash
 # 1. 克隆项目
 git clone https://github.com/Deepblue-Sky2333/Ai-Diet-Assistant/
-cd ai-diet-assistant
+cd Ai-Diet-Assistant
 
 # 2. 运行一键安装脚本
 ./install.sh
@@ -47,25 +45,11 @@ cd ai-diet-assistant
 - ✅ 构建前后端应用
 - ✅ 配置系统服务（可选）
 
-安装完成后，访问：**http://localhost:9090**
-
 **详细说明：** 查看 [快速开始指南](QUICKSTART.md)
 
-#### 开发模式
-
-如果需要前后端分离开发：
-
-```bash
-# 启动后端
-./scripts/start.sh
-
-# 启动前端（新终端）
-cd web/frontend && npm run dev
-```
-
 访问：
-- 前端：http://localhost:3000
-- 后端：http://localhost:9090
+
+- 后端：http://localhost:9090/api/v1
 
 ### 🏗️ 技术栈
 
@@ -88,20 +72,6 @@ cd web/frontend && npm run dev
 - [Nginx 配置](docs/NGINX_CONFIGURATION.md) - Nginx 反向代理配置指南
 - [安全最佳实践](docs/SECURITY.md) - 安全配置指南
 - [错误码说明](docs/ERROR_CODES.md) - 错误码参考
-
-### 🔧 开发
-
-```bash
-# 后端开发
-make run
-
-# 运行测试
-go test ./...
-
-# 代码检查
-go vet ./...
-golint ./...
-```
 
 ### 🚀 生产部署
 
@@ -142,13 +112,6 @@ golint ./...
    ```
 
 5. **配置 Nginx**
-   
-   后端是纯 API 服务，需要 Nginx 处理：
-   - 反向代理
-   - CORS 跨域请求
-   - SSL/TLS 终止
-   - 负载均衡（可选）
-   
    详细配置请参考：[Nginx 配置指南](docs/NGINX_CONFIGURATION.md)
 
 6. **配置系统服务**
@@ -169,37 +132,6 @@ golint ./...
    # 测试健康检查
    curl http://localhost:9090/health
    ```
-
-#### Nginx 配置示例
-
-```nginx
-server {
-    listen 80;
-    server_name api.yourdomain.com;
-
-    # CORS 配置
-    add_header 'Access-Control-Allow-Origin' '$http_origin' always;
-    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-    add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
-    add_header 'Access-Control-Allow-Credentials' 'true' always;
-
-    # 处理 OPTIONS 请求
-    if ($request_method = 'OPTIONS') {
-        return 204;
-    }
-
-    # 代理到后端
-    location / {
-        proxy_pass http://localhost:9090;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-完整配置和 HTTPS 设置请参考：[Nginx 配置指南](docs/NGINX_CONFIGURATION.md)
 
 ### 📝 项目结构
 

@@ -16,7 +16,7 @@
 ```bash
 # 1. 克隆项目
 git clone https://github.com/Deepblue-Sky2333/Ai-Diet-Assistant/
-cd ai-diet-assistant
+cd Ai-Diet-Assistant
 
 # 2. 运行一键安装脚本
 ./install.sh
@@ -51,7 +51,7 @@ cd ai-diet-assistant
 
 安装完成后，后端 API 服务会自动启动（如果配置了服务）。
 
-**后端 API 地址**：http://localhost:9090
+**后端 API 地址**：http://localhost:9090/api/v1
 
 **健康检查**：http://localhost:9090/health
 
@@ -91,25 +91,6 @@ sudo journalctl -u diet-assistant -f
 ./scripts/start.sh
 ```
 
-### 开发模式
-
-开发模式下，可以使用热重载：
-
-```bash
-# 安装 air（Go 热重载工具）
-go install github.com/cosmtrek/air@latest
-
-# 启动热重载
-air
-
-# 或直接运行
-./scripts/start.sh
-```
-
-访问：
-- 后端 API：http://localhost:9090
-- 健康检查：http://localhost:9090/health
-- API 文档：查看 docs/api/ 目录
 
 ### 测试 API
 
