@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/database"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/handler"
@@ -19,6 +18,7 @@ import (
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/router"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -129,17 +129,9 @@ func (a *App) initDependencies() error {
 		nutritionService,
 	)
 
-	// Note: DashboardService needs service instances, not repositories
-	// We'll create it after all services are initialized
-	var dashboardService *service.DashboardService
-	var planServiceForDashboard *service.PlanService
-
-	// Create plan service wrapper for dashboard
-	planServiceForDashboard = planService
-
-	dashboardService = service.NewDashboardService(
+	dashboardService := service.NewDashboardService(
 		mealService,
-		planServiceForDashboard,
+		planService,
 		nutritionService,
 	)
 

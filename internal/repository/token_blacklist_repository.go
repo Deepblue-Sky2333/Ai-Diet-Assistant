@@ -69,10 +69,10 @@ func NewMemoryTokenBlacklistRepository() TokenBlacklistRepository {
 	repo := &memoryTokenBlacklistRepository{
 		tokens: make(map[string]time.Time),
 	}
-	
+
 	// 启动后台清理 goroutine
 	go repo.cleanupLoop()
-	
+
 	return repo
 }
 
@@ -80,10 +80,10 @@ func NewMemoryTokenBlacklistRepository() TokenBlacklistRepository {
 func (m *memoryTokenBlacklistRepository) Add(ctx context.Context, token string, expiry time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	expiryTime := time.Now().Add(expiry)
 	m.tokens[token] = expiryTime
-	
+
 	return nil
 }
 
@@ -91,17 +91,17 @@ func (m *memoryTokenBlacklistRepository) Add(ctx context.Context, token string, 
 func (m *memoryTokenBlacklistRepository) IsBlacklisted(ctx context.Context, token string) (bool, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	expiryTime, exists := m.tokens[token]
 	if !exists {
 		return false, nil
 	}
-	
+
 	// 检查是否已过期
 	if time.Now().After(expiryTime) {
 		return false, nil
 	}
-	
+
 	return true, nil
 }
 
@@ -109,14 +109,14 @@ func (m *memoryTokenBlacklistRepository) IsBlacklisted(ctx context.Context, toke
 func (m *memoryTokenBlacklistRepository) Clean(ctx context.Context) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	now := time.Now()
 	for token, expiryTime := range m.tokens {
 		if now.After(expiryTime) {
 			delete(m.tokens, token)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (m *memoryTokenBlacklistRepository) Clean(ctx context.Context) error {
 func (m *memoryTokenBlacklistRepository) cleanupLoop() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		_ = m.Clean(context.Background())
 	}

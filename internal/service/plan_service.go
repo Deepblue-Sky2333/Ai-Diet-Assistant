@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/go-playground/validator/v10"
 )
 
 // PlanService handles plan business logic
@@ -62,8 +63,8 @@ func (s *PlanService) GeneratePlan(ctx context.Context, userID int64, request *m
 	now := time.Now()
 
 	for _, aiPlan := range aiResponse.Plans {
-		// Parse the date from AI response
-		planDate, err := time.Parse("2006-01-02", aiPlan.Date)
+		// Parse the date from AI response using unified date parsing
+		planDate, err := utils.ParseDate(aiPlan.Date)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse plan date %s: %w", aiPlan.Date, err)
 		}

@@ -25,6 +25,7 @@ go.work
 
 # Config files with sensitive data
 configs/config.yaml
+configs/module.conf.backup.*
 
 # Frontend
 web/frontend/.env.local
@@ -50,6 +51,7 @@ uploads/
 # IDE
 .vscode/
 .idea/
+.kiro/
 *.swp
 *.swo
 *~

@@ -204,17 +204,16 @@ func (r *userRepository) UpdatePasswordWithVersion(ctx context.Context, userID i
 // isDuplicateKeyError 检查是否是唯一键冲突错误
 func isDuplicateKeyError(err error) bool {
 	// MySQL 错误码 1062 表示唯一键冲突
-	return err != nil && (
-		err.Error() == "Error 1062" ||
+	return err != nil && (err.Error() == "Error 1062" ||
 		contains(err.Error(), "Duplicate entry") ||
 		contains(err.Error(), "duplicate key"))
 }
 
 // contains 检查字符串是否包含子串
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && 
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		containsMiddle(s, substr)))
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
+		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+			containsMiddle(s, substr)))
 }
 
 // containsMiddle 检查字符串中间是否包含子串

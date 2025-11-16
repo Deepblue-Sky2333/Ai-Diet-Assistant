@@ -71,12 +71,12 @@ func (s *DashboardService) GetDashboardData(userID int64) (*model.DashboardData,
 
 	// Assemble dashboard data
 	dashboardData := &model.DashboardData{
-		MonthlyStats:  monthlyStats,
-		FuturePlans:   futurePlans,
-		TodayStats:    todayStats,
-		CurrentMonth:  currentMonth,
-		CurrentYear:   currentYear,
-		GeneratedAt:   now,
+		MonthlyStats: monthlyStats,
+		FuturePlans:  futurePlans,
+		TodayStats:   todayStats,
+		CurrentMonth: currentMonth,
+		CurrentYear:  currentYear,
+		GeneratedAt:  now,
 	}
 
 	return dashboardData, nil

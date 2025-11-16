@@ -23,7 +23,7 @@ if [ -n "$1" ]; then
     echo "Using module path from argument: $NEW_MODULE_PATH"
 else
     # Read from config file
-    MODULE_CONF="$PROJECT_ROOT/.kiro/module.conf"
+    MODULE_CONF="$PROJECT_ROOT/configs/module.conf"
     if [ ! -f "$MODULE_CONF" ]; then
         echo -e "${RED}Error: No module path provided and config file not found${NC}"
         echo "Usage: $0 <module-path>"

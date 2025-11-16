@@ -464,12 +464,12 @@ fi
 # 更新模块路径配置
 echo -e "${BLUE}正在更新模块路径配置...${NC}"
 
-# 更新 .kiro/module.conf
-MODULE_CONF=".kiro/module.conf"
+# 更新 configs/module.conf
+MODULE_CONF="configs/module.conf"
 if [ -f "$MODULE_CONF" ]; then
     # 备份现有的 module.conf
     cp "$MODULE_CONF" "${MODULE_CONF}.backup.$(date +%Y%m%d_%H%M%S)"
-    echo -e "${GREEN}已备份现有的 module.conf${NC}"
+    echo -e "${GREEN}已备份现有的 configs/module.conf${NC}"
 fi
 
 # 在 module.conf 中更新 MODULE_PATH
@@ -523,7 +523,7 @@ elif [ -f "./scripts/update-module-path.sh" ]; then
     fi
 else
     echo -e "${YELLOW}警告：未找到模块路径更新脚本${NC}"
-    echo "模块路径配置已保存到 .kiro/module.conf"
+    echo "模块路径配置已保存到 configs/module.conf"
     echo "但未应用到 Go 文件。"
     echo ""
     echo "请手动更新："
@@ -614,7 +614,7 @@ echo "  - .env（权限：600）"
 if [ "$UPDATE_CONFIG" = true ]; then
     echo "  - configs/config.yaml（权限：600）"
 fi
-echo "  - .kiro/module.conf（模块路径配置）"
+echo "  - configs/module.conf（模块路径配置）"
 if [ -f "${FRONTEND_DIR}/.env.local" ]; then
     echo "  - ${FRONTEND_DIR}/.env.local（权限：600）"
 fi

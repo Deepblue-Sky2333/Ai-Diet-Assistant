@@ -6,7 +6,7 @@ import (
 )
 
 // NewAIProvider creates a new AI provider based on the configuration
-func NewAIProvider(config *ProviderConfig) (AIProvider, error) {
+func NewAIProvider(config *ProviderConfig) (Provider, error) {
 	if config == nil {
 		return nil, fmt.Errorf("provider config is required")
 	}

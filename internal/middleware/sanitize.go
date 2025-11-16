@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/text/unicode/norm"
 )
 

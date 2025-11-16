@@ -3,9 +3,9 @@ package handler
 import (
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // AIHandler handles AI-related HTTP requests
@@ -28,8 +28,8 @@ type ChatRequest struct {
 
 // SuggestMealPlanRequest represents the request body for meal plan suggestions
 type SuggestMealPlanRequest struct {
-	Days           int `json:"days" binding:"required,min=1,max=30"`
-	TargetCalories int `json:"target_calories" binding:"omitempty,min=800,max=10000"`
+	Days           int `json:"days" binding:"required,gte=1,lte=30"`
+	TargetCalories int `json:"target_calories" binding:"omitempty,gte=800,lte=10000"`
 }
 
 // Chat handles POST /api/v1/ai/chat
@@ -70,7 +70,7 @@ func (h *AIHandler) Chat(c *gin.Context) {
 	// Frontend may expect "response" field, so provide both "message" and "response"
 	utils.Success(c, gin.H{
 		"message":     response.Message,
-		"response":    response.Message,     // Alias for frontend compatibility
+		"response":    response.Message, // Alias for frontend compatibility
 		"message_id":  response.MessageID,
 		"tokens_used": response.TokensUsed,
 	})
@@ -135,9 +135,19 @@ func (h *AIHandler) GetChatHistory(c *gin.Context) {
 		return
 	}
 
-	// Parse pagination parameters
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	// Parse pagination parameters with validation
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if err != nil || pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 
 	// Get chat history
 	history, total, err := h.aiService.GetChatHistory(c.Request.Context(), userID.(int64), page, pageSize)
@@ -147,13 +157,7 @@ func (h *AIHandler) GetChatHistory(c *gin.Context) {
 	}
 
 	// Calculate pagination
-	totalPages := (total + pageSize - 1) / pageSize
-	pagination := &utils.Pagination{
-		Page:       page,
-		PageSize:   pageSize,
-		Total:      total,
-		TotalPages: totalPages,
-	}
+	pagination := utils.CalculatePagination(page, pageSize, total)
 
 	utils.SuccessWithPagination(c, history, pagination)
 }

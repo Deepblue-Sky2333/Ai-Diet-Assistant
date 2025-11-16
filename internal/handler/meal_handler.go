@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // MealHandler handles meal-related HTTP requests
@@ -26,7 +26,7 @@ func NewMealHandler(mealService *service.MealService) *MealHandler {
 type CreateMealRequest struct {
 	MealDate time.Time        `json:"meal_date" binding:"required"`
 	MealType string           `json:"meal_type" binding:"required,oneof=breakfast lunch dinner snack"`
-	Foods    []model.MealFood `json:"foods" binding:"required,min=1,max=50,dive"`
+	Foods    []model.MealFood `json:"foods" binding:"required,gte=1,lte=50,dive"`
 	Notes    string           `json:"notes" binding:"omitempty,max=500"`
 }
 
@@ -34,7 +34,7 @@ type CreateMealRequest struct {
 type UpdateMealRequest struct {
 	MealDate time.Time        `json:"meal_date" binding:"required"`
 	MealType string           `json:"meal_type" binding:"required,oneof=breakfast lunch dinner snack"`
-	Foods    []model.MealFood `json:"foods" binding:"required,min=1,max=50,dive"`
+	Foods    []model.MealFood `json:"foods" binding:"required,gte=1,lte=50,dive"`
 	Notes    string           `json:"notes" binding:"omitempty,max=500"`
 }
 
@@ -215,8 +215,8 @@ func (h *MealHandler) GetMeal(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param start_date query string false "Filter by start date (YYYY-MM-DD)"
-// @Param end_date query string false "Filter by end date (YYYY-MM-DD)"
+// @Param start_date query string false "Filter by start date (YYYY-MM-DD or ISO 8601)"
+// @Param end_date query string false "Filter by end date (YYYY-MM-DD or ISO 8601)"
 // @Param meal_type query string false "Filter by meal type (breakfast, lunch, dinner, snack)"
 // @Param page query int false "Page number (default: 1)"
 // @Param page_size query int false "Page size (default: 20, max: 100)"
@@ -237,28 +237,54 @@ func (h *MealHandler) ListMeals(c *gin.Context) {
 		MealType: c.Query("meal_type"),
 	}
 
+	// Validate meal_type if provided
+	if filter.MealType != "" {
+		validMealTypes := map[string]bool{"breakfast": true, "lunch": true, "dinner": true, "snack": true}
+		if !validMealTypes[filter.MealType] {
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid meal_type, must be one of: breakfast, lunch, dinner, snack", nil))
+			return
+		}
+	}
+
 	// Parse date filters
 	if startDateStr := c.Query("start_date"); startDateStr != "" {
-		startDate, err := time.Parse("2006-01-02", startDateStr)
+		startDate, err := utils.ParseDateToStartOfDay(startDateStr)
 		if err != nil {
-			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid start_date format", err))
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid start_date format, expected YYYY-MM-DD or ISO 8601", err))
 			return
 		}
 		filter.StartDate = &startDate
 	}
 
 	if endDateStr := c.Query("end_date"); endDateStr != "" {
-		endDate, err := time.Parse("2006-01-02", endDateStr)
+		endDate, err := utils.ParseDateToEndOfDay(endDateStr)
 		if err != nil {
-			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid end_date format", err))
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid end_date format, expected YYYY-MM-DD or ISO 8601", err))
 			return
 		}
 		filter.EndDate = &endDate
 	}
 
-	// Parse pagination
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	// Validate date range
+	if filter.StartDate != nil && filter.EndDate != nil && filter.EndDate.Before(*filter.StartDate) {
+		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "end_date must be after or equal to start_date", nil))
+		return
+	}
+
+	// Parse pagination with validation
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if err != nil || pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
 	filter.Page = page
 	filter.PageSize = pageSize
 

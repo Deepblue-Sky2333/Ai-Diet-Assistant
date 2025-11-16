@@ -2,7 +2,7 @@
 
 # Module Path Update Script
 # This script updates the Go module path throughout the entire project.
-# It reads the module path from .kiro/module.conf and updates:
+# It reads the module path from configs/module.conf and updates:
 # - go.mod module declaration
 # - All import statements in .go files
 
@@ -22,7 +22,7 @@ echo -e "${GREEN}=== Module Path Update Script ===${NC}"
 echo ""
 
 # Check if module.conf exists
-MODULE_CONF="$PROJECT_ROOT/.kiro/module.conf"
+MODULE_CONF="$PROJECT_ROOT/configs/module.conf"
 if [ ! -f "$MODULE_CONF" ]; then
     echo -e "${RED}Error: Configuration file not found: $MODULE_CONF${NC}"
     echo "Please create the file with MODULE_PATH=your/module/path"
@@ -69,7 +69,7 @@ fi
 # Check for placeholder values
 if [[ "$MODULE_PATH" == *"yourusername"* ]] || [[ "$MODULE_PATH" == *"example"* ]]; then
     echo -e "${RED}Error: Module path contains placeholder values: $MODULE_PATH${NC}"
-    echo "Please update .kiro/module.conf with your actual repository path."
+    echo "Please update configs/module.conf with your actual repository path."
     exit 1
 fi
 

@@ -4,21 +4,21 @@ import "time"
 
 // Meal represents a meal record
 type Meal struct {
-	ID        int64          `json:"id" db:"id"`
-	UserID    int64          `json:"user_id" db:"user_id"`
-	MealDate  time.Time      `json:"meal_date" db:"meal_date" binding:"required"`
-	MealType  string         `json:"meal_type" db:"meal_type" binding:"required,oneof=breakfast lunch dinner snack"`
-	Foods     []MealFood     `json:"foods" binding:"required,min=1,dive"`
-	Nutrition NutritionData  `json:"nutrition"`
-	Notes     string         `json:"notes,omitempty" db:"notes" binding:"max=500"`
-	CreatedAt time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at" db:"updated_at"`
+	ID        int64         `json:"id" db:"id"`
+	UserID    int64         `json:"user_id" db:"user_id"`
+	MealDate  time.Time     `json:"meal_date" db:"meal_date" binding:"required"`
+	MealType  string        `json:"meal_type" db:"meal_type" binding:"required,oneof=breakfast lunch dinner snack"`
+	Foods     []MealFood    `json:"foods" binding:"required,gte=1,dive"`
+	Nutrition NutritionData `json:"nutrition"`
+	Notes     string        `json:"notes,omitempty" db:"notes" binding:"omitempty,max=500"`
+	CreatedAt time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at" db:"updated_at"`
 }
 
 // MealFood represents a food item in a meal
 type MealFood struct {
 	FoodID int64   `json:"food_id" binding:"required,gt=0"`
-	Name   string  `json:"name" binding:"omitempty,max=100"`
+	Name   string  `json:"name" binding:"omitempty,min=1,max=100"`
 	Amount float64 `json:"amount" binding:"required,gt=0,lte=10000"`
 	Unit   string  `json:"unit" binding:"required,min=1,max=20"`
 }
@@ -68,10 +68,10 @@ type NutritionComparison struct {
 
 // DashboardData represents aggregated data for the dashboard view
 type DashboardData struct {
-	MonthlyStats  *MonthlyStats           `json:"monthly_stats"`
-	FuturePlans   []*Plan                 `json:"future_plans"`
-	TodayStats    *DailyNutritionStats    `json:"today_stats"`
-	CurrentMonth  int                     `json:"current_month"`
-	CurrentYear   int                     `json:"current_year"`
-	GeneratedAt   time.Time               `json:"generated_at"`
+	MonthlyStats *MonthlyStats        `json:"monthly_stats"`
+	FuturePlans  []*Plan              `json:"future_plans"`
+	TodayStats   *DailyNutritionStats `json:"today_stats"`
+	CurrentMonth int                  `json:"current_month"`
+	CurrentYear  int                  `json:"current_year"`
+	GeneratedAt  time.Time            `json:"generated_at"`
 }

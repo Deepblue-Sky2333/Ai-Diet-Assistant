@@ -29,12 +29,12 @@ type AuthService interface {
 
 // authService 认证服务实现
 type authService struct {
-	userRepo          repository.UserRepository
-	loginAttemptRepo  repository.LoginAttemptRepository
+	userRepo           repository.UserRepository
+	loginAttemptRepo   repository.LoginAttemptRepository
 	tokenBlacklistRepo repository.TokenBlacklistRepository
-	jwtService        *utils.JWTService
-	maxLoginAttempts  int
-	lockoutDuration   time.Duration
+	jwtService         *utils.JWTService
+	maxLoginAttempts   int
+	lockoutDuration    time.Duration
 }
 
 // NewAuthService 创建认证服务实例
@@ -175,7 +175,6 @@ func (s *authService) ValidateToken(ctx context.Context, token string) (*utils.C
 
 	return claims, nil
 }
-
 
 // Logout 用户登出
 func (s *authService) Logout(ctx context.Context, token string) error {

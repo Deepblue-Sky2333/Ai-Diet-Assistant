@@ -194,7 +194,7 @@ func (s *AIService) TestAIConnection(ctx context.Context, userID int64) error {
 }
 
 // createProvider creates an AI provider from settings
-func (s *AIService) createProvider(settings *model.AISettings) (ai.AIProvider, error) {
+func (s *AIService) createProvider(settings *model.AISettings) (ai.Provider, error) {
 	config := &ai.ProviderConfig{
 		Provider:    settings.Provider,
 		APIEndpoint: settings.APIEndpoint,

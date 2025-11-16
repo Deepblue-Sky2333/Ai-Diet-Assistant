@@ -73,28 +73,6 @@ rate_limit:
   burst: 10
 
 # ============================================
-# CORS Configuration
-# ============================================
-# 由安装脚本配置 / Configured by install script
-cors:
-  allowed_origins:
-    - http://localhost:3000
-  allowed_methods:
-    - GET
-    - POST
-    - PUT
-    - DELETE
-    - OPTIONS
-  allowed_headers:
-    - Origin
-    - Content-Type
-    - Authorization
-  expose_headers:
-    - Content-Length
-  allow_credentials: true
-  max_age: 12h
-
-# ============================================
 # Logging Configuration
 # ============================================
 log:
@@ -116,6 +94,12 @@ security:
   require_special_char: true
   require_number: true
   require_uppercase: true
+  
+  # Default admin user (auto-created on startup)
+  default_user:
+    enabled: true
+    username: admin
+    password: "114514"
 
 # ============================================
 # Upload Configuration

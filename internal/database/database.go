@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
+	// Import MySQL driver for database/sql
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
@@ -15,7 +16,7 @@ var db *sql.DB
 // Init 初始化数据库连接
 func Init(cfg *config.DatabaseConfig) error {
 	var err error
-	
+
 	// 创建数据库连接
 	db, err = sql.Open("mysql", cfg.GetDSN())
 	if err != nil {

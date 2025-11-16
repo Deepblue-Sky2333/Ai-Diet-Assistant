@@ -7,24 +7,24 @@ import (
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 )
 
-// AIProvider defines the interface for AI service providers
-type AIProvider interface {
+// Provider defines the interface for AI service providers
+type Provider interface {
 	// GenerateMealPlan generates meal plans based on available foods and preferences
 	GenerateMealPlan(ctx context.Context, request *MealPlanRequest) (*MealPlanResponse, error)
-	
+
 	// Chat handles conversational interactions with the AI
 	Chat(ctx context.Context, request *ChatRequest) (*ChatResponse, error)
-	
+
 	// TestConnection tests the connection to the AI provider
 	TestConnection(ctx context.Context) error
 }
 
 // MealPlanRequest represents a request to generate meal plans
 type MealPlanRequest struct {
-	AvailableFoods []model.Food        `json:"available_foods"`
-	Preferences    *UserPreferences    `json:"preferences"`
-	Days           int                 `json:"days"`
-	TargetCalories int                 `json:"target_calories"`
+	AvailableFoods []model.Food     `json:"available_foods"`
+	Preferences    *UserPreferences `json:"preferences"`
+	Days           int              `json:"days"`
+	TargetCalories int              `json:"target_calories"`
 }
 
 // UserPreferences represents user dietary preferences
@@ -42,11 +42,11 @@ type MealPlanResponse struct {
 
 // PlannedMeal represents a single meal in the plan
 type PlannedMeal struct {
-	Date      string          `json:"date"`
-	MealType  string          `json:"meal_type"`
-	Foods     []MealFood      `json:"foods"`
-	Reasoning string          `json:"reasoning"`
-	Nutrition NutritionData   `json:"nutrition"`
+	Date      string        `json:"date"`
+	MealType  string        `json:"meal_type"`
+	Foods     []MealFood    `json:"foods"`
+	Reasoning string        `json:"reasoning"`
+	Nutrition NutritionData `json:"nutrition"`
 }
 
 // MealFood represents a food item in a meal with quantity

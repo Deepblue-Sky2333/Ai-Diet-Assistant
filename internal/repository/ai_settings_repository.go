@@ -142,7 +142,7 @@ func (r *AISettingsRepository) UpdateAISettings(ctx context.Context, settings *m
 	return nil
 }
 
-// GetAISettings retrieves AI settings by ID with decrypted API key
+// GetAISettingsByID retrieves AI settings by ID with decrypted API key
 func (r *AISettingsRepository) GetAISettingsByID(ctx context.Context, userID, settingsID int64) (*model.AISettings, error) {
 	query := `
 		SELECT id, user_id, provider, api_endpoint, api_key_encrypted, model, temperature, max_tokens, is_active, created_at, updated_at

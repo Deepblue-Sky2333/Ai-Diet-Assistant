@@ -134,14 +134,14 @@ func (s *settingsService) GetUserPreferences(ctx context.Context, userID int64) 
 	// 如果不存在，返回默认值
 	if prefs == nil {
 		prefs = &model.UserPreferences{
-			UserID:            userID,
-			TastePreferences:  "",
+			UserID:              userID,
+			TastePreferences:    "",
 			DietaryRestrictions: "",
-			DailyCaloriesGoal: 2000,
-			DailyProteinGoal:  150,
-			DailyCarbsGoal:    250,
-			DailyFatGoal:      70,
-			DailyFiberGoal:    30,
+			DailyCaloriesGoal:   2000,
+			DailyProteinGoal:    150,
+			DailyCarbsGoal:      250,
+			DailyFatGoal:        70,
+			DailyFiberGoal:      30,
 		}
 	}
 

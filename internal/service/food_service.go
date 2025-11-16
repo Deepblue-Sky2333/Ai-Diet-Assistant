@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
+	"github.com/go-playground/validator/v10"
 )
 
 // FoodService handles food business logic

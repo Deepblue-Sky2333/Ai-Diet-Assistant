@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/database"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -21,68 +21,68 @@ type RateLimiterInterface interface {
 
 // rateLimitEntry 限流条目（内存实现使用）
 type rateLimitEntry struct {
-	count      int
-	resetTime  time.Time
-	mu         sync.Mutex
+	count     int
+	resetTime time.Time
+	mu        sync.Mutex
 }
 
 // MemoryRateLimiter 内存限流器
 type MemoryRateLimiter struct {
-	entries   map[string]*rateLimitEntry
-	mu        sync.RWMutex
-	limit     int
-	window    time.Duration
+	entries         map[string]*rateLimitEntry
+	mu              sync.RWMutex
+	limit           int
+	window          time.Duration
 	cleanupInterval time.Duration
 }
 
 // RedisRateLimiter Redis限流器（滑动窗口算法）
 type RedisRateLimiter struct {
-	client       *redis.Client
-	limit        int
-	window       time.Duration
-	fallback     *MemoryRateLimiter
-	logger       *zap.Logger
-	useFallback  bool
-	fallbackMu   sync.RWMutex
+	client      *redis.Client
+	limit       int
+	window      time.Duration
+	fallback    *MemoryRateLimiter
+	logger      *zap.Logger
+	useFallback bool
+	fallbackMu  sync.RWMutex
 }
 
 // NewMemoryRateLimiter 创建内存限流器
 func NewMemoryRateLimiter(requestsPerMinute int) *MemoryRateLimiter {
 	rl := &MemoryRateLimiter{
-		entries:   make(map[string]*rateLimitEntry),
-		limit:     requestsPerMinute,
-		window:    time.Minute,
+		entries:         make(map[string]*rateLimitEntry),
+		limit:           requestsPerMinute,
+		window:          time.Minute,
 		cleanupInterval: 5 * time.Minute,
 	}
-	
+
 	// 启动清理过期条目的 goroutine
 	go rl.cleanup()
-	
+
 	return rl
 }
 
 // NewRedisRateLimiter 创建Redis限流器
 func NewRedisRateLimiter(client *redis.Client, requestsPerMinute int, logger *zap.Logger) *RedisRateLimiter {
 	rl := &RedisRateLimiter{
-		client:   client,
-		limit:    requestsPerMinute,
-		window:   time.Minute,
-		fallback: NewMemoryRateLimiter(requestsPerMinute),
-		logger:   logger,
+		client:      client,
+		limit:       requestsPerMinute,
+		window:      time.Minute,
+		fallback:    NewMemoryRateLimiter(requestsPerMinute),
+		logger:      logger,
 		useFallback: false,
 	}
-	
+
 	// 测试Redis连接
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	
+
 	if err := client.Ping(ctx).Err(); err != nil {
 		if logger != nil {
 			logger.Warn("Redis connection failed, using memory fallback for rate limiting", zap.Error(err))
 		}
 		rl.useFallback = true
 	}
-	
+
 	return rl
 }
 
@@ -90,7 +90,7 @@ func NewRedisRateLimiter(client *redis.Client, requestsPerMinute int, logger *za
 func (rl *MemoryRateLimiter) cleanup() {
 	ticker := time.NewTicker(rl.cleanupInterval)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		now := time.Now()
 		rl.mu.Lock()
@@ -108,7 +108,7 @@ func (rl *MemoryRateLimiter) cleanup() {
 // Allow 检查是否允许请求（内存实现）
 func (rl *MemoryRateLimiter) Allow(key string) bool {
 	now := time.Now()
-	
+
 	rl.mu.Lock()
 	entry, exists := rl.entries[key]
 	if !exists {
@@ -119,21 +119,21 @@ func (rl *MemoryRateLimiter) Allow(key string) bool {
 		rl.entries[key] = entry
 	}
 	rl.mu.Unlock()
-	
+
 	entry.mu.Lock()
 	defer entry.mu.Unlock()
-	
+
 	// 如果窗口已过期，重置计数器
 	if now.After(entry.resetTime) {
 		entry.count = 0
 		entry.resetTime = now.Add(rl.window)
 	}
-	
+
 	// 检查是否超过限制
 	if entry.count >= rl.limit {
 		return false
 	}
-	
+
 	entry.count++
 	return true
 }
@@ -144,19 +144,19 @@ func (rl *RedisRateLimiter) Allow(key string) bool {
 	rl.fallbackMu.RLock()
 	useFallback := rl.useFallback
 	rl.fallbackMu.RUnlock()
-	
+
 	if useFallback {
 		return rl.fallback.Allow(key)
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
-	
+
 	now := time.Now()
-	
+
 	// Redis key
 	redisKey := fmt.Sprintf("ratelimit:%s", key)
-	
+
 	// 使用 Lua 脚本实现原子操作的滑动窗口算法
 	script := redis.NewScript(`
 		local key = KEYS[1]
@@ -181,31 +181,31 @@ func (rl *RedisRateLimiter) Allow(key string) bool {
 			return 0
 		end
 	`)
-	
-	result, err := script.Run(ctx, rl.client, []string{redisKey}, 
-		now.UnixNano(), 
-		int64(rl.window.Seconds()), 
+
+	result, err := script.Run(ctx, rl.client, []string{redisKey},
+		now.UnixNano(),
+		int64(rl.window.Seconds()),
 		rl.limit).Result()
-	
+
 	if err != nil {
 		// Redis 出错时降级到内存限流
 		if rl.logger != nil {
-			rl.logger.Warn("Redis rate limiter error, falling back to memory", 
-				zap.Error(err), 
+			rl.logger.Warn("Redis rate limiter error, falling back to memory",
+				zap.Error(err),
 				zap.String("key", key))
 		}
-		
+
 		// 标记使用降级方案
 		rl.fallbackMu.Lock()
 		rl.useFallback = true
 		rl.fallbackMu.Unlock()
-		
+
 		// 启动恢复检查
 		go rl.checkRedisRecovery()
-		
+
 		return rl.fallback.Allow(key)
 	}
-	
+
 	return result.(int64) == 1
 }
 
@@ -213,16 +213,16 @@ func (rl *RedisRateLimiter) Allow(key string) bool {
 func (rl *RedisRateLimiter) checkRedisRecovery() {
 	// 等待一段时间后尝试恢复
 	time.Sleep(10 * time.Second)
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	
+
 	if err := rl.client.Ping(ctx).Err(); err == nil {
 		// Redis 已恢复
 		rl.fallbackMu.Lock()
 		rl.useFallback = false
 		rl.fallbackMu.Unlock()
-		
+
 		if rl.logger != nil {
 			rl.logger.Info("Redis connection recovered, switching back from memory fallback")
 		}
@@ -236,11 +236,11 @@ func RateLimitMiddleware(cfg *config.RateLimitConfig, redisCfg *config.RedisConf
 			c.Next()
 		}
 	}
-	
+
 	// 根据配置选择限流实现
 	var limiter RateLimiterInterface
 	var storageType string
-	
+
 	// 如果Redis已启用且可用，使用Redis限流器
 	if redisCfg.Enabled && database.IsRedisEnabled() {
 		redisClient := database.GetRedisClient()
@@ -264,10 +264,10 @@ func RateLimitMiddleware(cfg *config.RateLimitConfig, redisCfg *config.RedisConf
 			logger.Info("Rate limiter initialized with memory storage")
 		}
 	}
-	
+
 	return func(c *gin.Context) {
 		startTime := time.Now()
-		
+
 		// 获取限流键（优先使用用户 ID，否则使用 IP）
 		var key string
 		if userID, exists := GetUserID(c); exists {
@@ -275,10 +275,10 @@ func RateLimitMiddleware(cfg *config.RateLimitConfig, redisCfg *config.RedisConf
 		} else {
 			key = fmt.Sprintf("ip:%s", c.ClientIP())
 		}
-		
+
 		// 检查是否允许请求
 		allowed := limiter.Allow(key)
-		
+
 		// 记录性能监控日志
 		duration := time.Since(startTime)
 		if logger != nil && duration > 100*time.Millisecond {
@@ -288,7 +288,7 @@ func RateLimitMiddleware(cfg *config.RateLimitConfig, redisCfg *config.RedisConf
 				zap.String("key", key),
 				zap.Bool("allowed", allowed))
 		}
-		
+
 		if !allowed {
 			if logger != nil {
 				logger.Info("Rate limit exceeded",
@@ -296,7 +296,7 @@ func RateLimitMiddleware(cfg *config.RateLimitConfig, redisCfg *config.RedisConf
 					zap.String("storage", storageType),
 					zap.String("ip", c.ClientIP()))
 			}
-			
+
 			utils.Error(c, utils.NewAppError(
 				utils.CodeTooManyRequests,
 				"too many requests, please try again later",
@@ -305,7 +305,7 @@ func RateLimitMiddleware(cfg *config.RateLimitConfig, redisCfg *config.RedisConf
 			c.Abort()
 			return
 		}
-		
+
 		c.Next()
 	}
 }

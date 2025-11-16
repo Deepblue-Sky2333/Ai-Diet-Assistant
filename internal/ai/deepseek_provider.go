@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// DeepSeekProvider implements AIProvider for DeepSeek API
+// DeepSeekProvider implements Provider for DeepSeek API
 // DeepSeek API is compatible with OpenAI's API format
 type DeepSeekProvider struct {
 	config     *ProviderConfig
@@ -29,10 +29,10 @@ func NewDeepSeekProvider(config *ProviderConfig) *DeepSeekProvider {
 
 // deepSeekRequest represents a request to DeepSeek API
 type deepSeekRequest struct {
-	Model       string             `json:"model"`
-	Messages    []deepSeekMessage  `json:"messages"`
-	Temperature float64            `json:"temperature"`
-	MaxTokens   int                `json:"max_tokens"`
+	Model       string            `json:"model"`
+	Messages    []deepSeekMessage `json:"messages"`
+	Temperature float64           `json:"temperature"`
+	MaxTokens   int               `json:"max_tokens"`
 }
 
 // deepSeekMessage represents a message in the conversation
@@ -181,7 +181,7 @@ func (p *DeepSeekProvider) callAPI(ctx context.Context, messages []deepSeekMessa
 	}
 
 	if apiResponse.Error != nil {
-		return nil, fmt.Errorf("DeepSeek API error: %s (type: %s, code: %s)", 
+		return nil, fmt.Errorf("DeepSeek API error: %s (type: %s, code: %s)",
 			apiResponse.Error.Message, apiResponse.Error.Type, apiResponse.Error.Code)
 	}
 

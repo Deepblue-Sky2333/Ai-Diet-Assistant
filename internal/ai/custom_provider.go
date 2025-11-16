@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// CustomProvider implements AIProvider for custom API endpoints
+// CustomProvider implements Provider for custom API endpoints
 // Supports OpenAI-compatible API format
 type CustomProvider struct {
 	config     *ProviderConfig
@@ -190,7 +190,7 @@ func (p *CustomProvider) callAPI(ctx context.Context, messages []customMessage) 
 	}
 
 	if apiResponse.Error != nil {
-		return nil, fmt.Errorf("custom API error: %s (type: %s, code: %s)", 
+		return nil, fmt.Errorf("custom API error: %s (type: %s, code: %s)",
 			apiResponse.Error.Message, apiResponse.Error.Type, apiResponse.Error.Code)
 	}
 

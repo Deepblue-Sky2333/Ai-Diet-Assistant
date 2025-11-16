@@ -6,17 +6,16 @@ import (
 
 // Config 应用配置结构
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	Database  DatabaseConfig  `mapstructure:"database"`
-	Redis     RedisConfig     `mapstructure:"redis"`
-	JWT       JWTConfig       `mapstructure:"jwt"`
+	Server     ServerConfig     `mapstructure:"server"`
+	Database   DatabaseConfig   `mapstructure:"database"`
+	Redis      RedisConfig      `mapstructure:"redis"`
+	JWT        JWTConfig        `mapstructure:"jwt"`
 	Encryption EncryptionConfig `mapstructure:"encryption"`
-	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
-	CORS      CORSConfig      `mapstructure:"cors"`
-	Log       LogConfig       `mapstructure:"log"`
-	AI        AIConfig        `mapstructure:"ai"`
-	Security  SecurityConfig  `mapstructure:"security"`
-	Upload    UploadConfig    `mapstructure:"upload"`
+	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
+	Log        LogConfig        `mapstructure:"log"`
+	AI         AIConfig         `mapstructure:"ai"`
+	Security   SecurityConfig   `mapstructure:"security"`
+	Upload     UploadConfig     `mapstructure:"upload"`
 }
 
 // ServerConfig 服务器配置
@@ -55,9 +54,9 @@ type RedisConfig struct {
 
 // JWTConfig JWT 配置
 type JWTConfig struct {
-	Secret            string `mapstructure:"secret"`
-	ExpireHours       int    `mapstructure:"expire_hours"`
-	RefreshExpireHours int   `mapstructure:"refresh_expire_hours"`
+	Secret             string `mapstructure:"secret"`
+	ExpireHours        int    `mapstructure:"expire_hours"`
+	RefreshExpireHours int    `mapstructure:"refresh_expire_hours"`
 }
 
 // EncryptionConfig 加密配置
@@ -71,16 +70,6 @@ type RateLimitConfig struct {
 	RequestsPerMinute int    `mapstructure:"requests_per_minute"`
 	Burst             int    `mapstructure:"burst"`
 	StorageType       string `mapstructure:"storage_type"` // "memory" or "redis"
-}
-
-// CORSConfig CORS 配置
-type CORSConfig struct {
-	AllowedOrigins   []string      `mapstructure:"allowed_origins"`
-	AllowedMethods   []string      `mapstructure:"allowed_methods"`
-	AllowedHeaders   []string      `mapstructure:"allowed_headers"`
-	ExposeHeaders    []string      `mapstructure:"expose_headers"`
-	AllowCredentials bool          `mapstructure:"allow_credentials"`
-	MaxAge           time.Duration `mapstructure:"max_age"`
 }
 
 // LogConfig 日志配置
@@ -106,12 +95,12 @@ type AIConfig struct {
 
 // SecurityConfig 安全配置
 type SecurityConfig struct {
-	MaxLoginAttempts   int           `mapstructure:"max_login_attempts"`
-	LockoutDuration    time.Duration `mapstructure:"lockout_duration"`
-	PasswordMinLength  int           `mapstructure:"password_min_length"`
-	RequireSpecialChar bool          `mapstructure:"require_special_char"`
-	RequireNumber      bool          `mapstructure:"require_number"`
-	RequireUppercase   bool          `mapstructure:"require_uppercase"`
+	MaxLoginAttempts   int               `mapstructure:"max_login_attempts"`
+	LockoutDuration    time.Duration     `mapstructure:"lockout_duration"`
+	PasswordMinLength  int               `mapstructure:"password_min_length"`
+	RequireSpecialChar bool              `mapstructure:"require_special_char"`
+	RequireNumber      bool              `mapstructure:"require_number"`
+	RequireUppercase   bool              `mapstructure:"require_uppercase"`
 	DefaultUser        DefaultUserConfig `mapstructure:"default_user"`
 }
 

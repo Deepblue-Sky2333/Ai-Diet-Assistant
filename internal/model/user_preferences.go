@@ -23,9 +23,9 @@ type UserPreferences struct {
 type UpdateUserPreferencesRequest struct {
 	TastePreferences    string `json:"taste_preferences" binding:"omitempty,max=500"`
 	DietaryRestrictions string `json:"dietary_restrictions" binding:"omitempty,max=500"`
-	DailyCaloriesGoal   int    `json:"daily_calories_goal" binding:"omitempty,min=800,max=10000"`
-	DailyProteinGoal    int    `json:"daily_protein_goal" binding:"omitempty,min=0,max=500"`
-	DailyCarbsGoal      int    `json:"daily_carbs_goal" binding:"omitempty,min=0,max=1000"`
-	DailyFatGoal        int    `json:"daily_fat_goal" binding:"omitempty,min=0,max=500"`
-	DailyFiberGoal      int    `json:"daily_fiber_goal" binding:"omitempty,min=0,max=200"`
+	DailyCaloriesGoal   int    `json:"daily_calories_goal" binding:"omitempty,gte=800,lte=10000"`
+	DailyProteinGoal    int    `json:"daily_protein_goal" binding:"omitempty,gte=0,lte=500"`
+	DailyCarbsGoal      int    `json:"daily_carbs_goal" binding:"omitempty,gte=0,lte=1000"`
+	DailyFatGoal        int    `json:"daily_fat_goal" binding:"omitempty,gte=0,lte=500"`
+	DailyFiberGoal      int    `json:"daily_fiber_goal" binding:"omitempty,gte=0,lte=200"`
 }

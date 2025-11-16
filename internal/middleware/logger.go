@@ -27,17 +27,17 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 记录请求开始时间
 		startTime := time.Now()
-		
+
 		// 处理请求
 		c.Next()
-		
+
 		// 计算响应时间
 		duration := time.Since(startTime)
-		
+
 		// 获取用户信息
 		userID, _ := GetUserID(c)
 		username, _ := GetUsername(c)
-		
+
 		// 构建日志字段
 		fields := []zap.Field{
 			zap.String("method", c.Request.Method),
@@ -49,7 +49,7 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
 		}
-		
+
 		// 添加用户信息（如果存在）
 		if userID > 0 {
 			fields = append(fields, zap.Int64("user_id", userID))
@@ -57,14 +57,14 @@ func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 		if username != "" {
 			fields = append(fields, zap.String("username", username))
 		}
-		
+
 		// 添加错误信息（如果存在）
 		if len(c.Errors) > 0 {
 			// 清理错误消息中的敏感信息（如DSN）
 			sanitizedErrors := sanitizeDSN(c.Errors.String())
 			fields = append(fields, zap.String("errors", sanitizedErrors))
 		}
-		
+
 		// 根据状态码选择日志级别
 		switch {
 		case c.Writer.Status() >= 500:
@@ -82,7 +82,7 @@ func sanitizeQuery(query string) string {
 	if query == "" {
 		return ""
 	}
-	
+
 	// 简单的脱敏处理：检查是否包含敏感字段
 	lowerQuery := strings.ToLower(query)
 	for _, field := range sensitiveFields {
@@ -90,19 +90,8 @@ func sanitizeQuery(query string) string {
 			return "[REDACTED]"
 		}
 	}
-	
-	return query
-}
 
-// sanitizeValue 脱敏值
-func sanitizeValue(key, value string) string {
-	lowerKey := strings.ToLower(key)
-	for _, field := range sensitiveFields {
-		if strings.Contains(lowerKey, field) {
-			return "***"
-		}
-	}
-	return value
+	return query
 }
 
 // sanitizeDSN 清理字符串中的数据库连接字符串密码

@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // DashboardHandler handles dashboard-related HTTP requests

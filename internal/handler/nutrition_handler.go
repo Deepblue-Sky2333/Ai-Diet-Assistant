@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // NutritionHandler handles nutrition analysis and statistics HTTP requests
@@ -32,7 +32,7 @@ func NewNutritionHandler(nutritionService *service.NutritionService, prefsRepo r
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param date path string true "Date in YYYY-MM-DD format"
+// @Param date path string true "Date (YYYY-MM-DD or ISO 8601)"
 // @Success 200 {object} utils.Response{data=model.DailyNutritionStats}
 // @Failure 400 {object} utils.Response
 // @Failure 401 {object} utils.Response
@@ -47,9 +47,9 @@ func (h *NutritionHandler) GetDailyNutrition(c *gin.Context) {
 
 	// Parse date parameter
 	dateStr := c.Param("date")
-	date, err := time.Parse("2006-01-02", dateStr)
+	date, err := utils.ParseDateToStartOfDay(dateStr)
 	if err != nil {
-		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid date format, expected YYYY-MM-DD", err))
+		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid date format, expected YYYY-MM-DD or ISO 8601", err))
 		return
 	}
 
@@ -122,8 +122,8 @@ func (h *NutritionHandler) GetMonthlyNutrition(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param start_date query string true "Start date in YYYY-MM-DD format"
-// @Param end_date query string true "End date in YYYY-MM-DD format"
+// @Param start_date query string true "Start date (YYYY-MM-DD or ISO 8601)"
+// @Param end_date query string true "End date (YYYY-MM-DD or ISO 8601)"
 // @Success 200 {object} utils.Response{data=model.NutritionComparison}
 // @Failure 400 {object} utils.Response
 // @Failure 401 {object} utils.Response
@@ -146,15 +146,15 @@ func (h *NutritionHandler) CompareNutrition(c *gin.Context) {
 
 	// If start_date and end_date are provided, use date range
 	if startDateStr != "" && endDateStr != "" {
-		startDate, err = time.Parse("2006-01-02", startDateStr)
+		startDate, err = utils.ParseDateToStartOfDay(startDateStr)
 		if err != nil {
-			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid start_date format, expected YYYY-MM-DD", err))
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid start_date format, expected YYYY-MM-DD or ISO 8601", err))
 			return
 		}
 
-		endDate, err = time.Parse("2006-01-02", endDateStr)
+		endDate, err = utils.ParseDateToEndOfDay(endDateStr)
 		if err != nil {
-			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid end_date format, expected YYYY-MM-DD", err))
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid end_date format, expected YYYY-MM-DD or ISO 8601", err))
 			return
 		}
 
@@ -165,9 +165,9 @@ func (h *NutritionHandler) CompareNutrition(c *gin.Context) {
 		}
 	} else if singleDateStr != "" {
 		// Backward compatibility: single date parameter
-		startDate, err = time.Parse("2006-01-02", singleDateStr)
+		startDate, err = utils.ParseDateToStartOfDay(singleDateStr)
 		if err != nil {
-			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid date format, expected YYYY-MM-DD", err))
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid date format, expected YYYY-MM-DD or ISO 8601", err))
 			return
 		}
 		endDate = startDate

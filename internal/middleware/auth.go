@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 const (

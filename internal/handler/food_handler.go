@@ -3,10 +3,10 @@ package handler
 import (
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // FoodHandler handles food-related HTTP requests
@@ -51,7 +51,7 @@ type UpdateFoodRequest struct {
 
 // BatchImportRequest represents the request body for batch importing foods
 type BatchImportRequest struct {
-	Foods []CreateFoodRequest `json:"foods" binding:"required,min=1,max=100,dive"`
+	Foods []CreateFoodRequest `json:"foods" binding:"required,gte=1,lte=100,dive"`
 }
 
 // CreateFood handles POST /api/v1/foods
@@ -69,9 +69,7 @@ type BatchImportRequest struct {
 func (h *FoodHandler) CreateFood(c *gin.Context) {
 	var req CreateFoodRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		// 提供更详细的验证错误信息
-		errorMsg := "invalid request parameters: " + err.Error()
-		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, errorMsg, err))
+		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid request parameters", err))
 		return
 	}
 
@@ -266,15 +264,39 @@ func (h *FoodHandler) ListFoods(c *gin.Context) {
 		Category: c.Query("category"),
 	}
 
+	// Validate category if provided
+	if filter.Category != "" {
+		validCategories := map[string]bool{"meat": true, "vegetable": true, "fruit": true, "grain": true, "other": true}
+		if !validCategories[filter.Category] {
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid category, must be one of: meat, vegetable, fruit, grain, other", nil))
+			return
+		}
+	}
+
 	// Parse available filter
 	if availableStr := c.Query("available"); availableStr != "" {
+		if availableStr != "true" && availableStr != "false" {
+			utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid available parameter, must be true or false", nil))
+			return
+		}
 		available := availableStr == "true"
 		filter.Available = &available
 	}
 
-	// Parse pagination
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	// Parse pagination with validation
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if err != nil || pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
 	filter.Page = page
 	filter.PageSize = pageSize
 
@@ -286,13 +308,7 @@ func (h *FoodHandler) ListFoods(c *gin.Context) {
 	}
 
 	// Calculate pagination
-	totalPages := (total + filter.PageSize - 1) / filter.PageSize
-	pagination := &utils.Pagination{
-		Page:       filter.Page,
-		PageSize:   filter.PageSize,
-		Total:      total,
-		TotalPages: totalPages,
-	}
+	pagination := utils.CalculatePagination(filter.Page, filter.PageSize, total)
 
 	utils.SuccessWithPagination(c, foods, pagination)
 }

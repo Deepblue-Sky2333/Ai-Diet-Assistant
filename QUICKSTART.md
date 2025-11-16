@@ -6,8 +6,8 @@
 
 - **Go**: 1.21 或更高版本
 - **MySQL**: 8.0 或更高版本
-- **Node.js**: 18 或更高版本
-- **npm**: 9 或更高版本
+- **Redis**: 6 或更高版本（可选，用于 Token 黑名单）
+- **Nginx**: 最新稳定版（生产环境推荐）
 
 ## 🚀 一键安装（5 分钟）
 
@@ -25,16 +25,14 @@ cd ai-diet-assistant
 ### 安装脚本会自动完成
 
 1. **检测系统依赖**
-   - 检测 Go、Node.js、MySQL、openssl
-   - 如果缺少，提示自动安装
+   - 检测 Go、MySQL、Redis、openssl
+   - 如果缺少，提示安装方法
 
 2. **配置系统**
    - 自动生成安全密钥（JWT 和 AES）
    - 配置数据库连接
-   - 配置 CORS 允许的域名
-   - 配置 Go 模块路径
    - 配置 Redis（可选）
-   - 配置前端（Demo 模式或生产模式）
+   - 配置 Go 模块路径
 
 3. **创建数据库**
    - 自动创建数据库
@@ -42,9 +40,7 @@ cd ai-diet-assistant
 
 4. **构建应用**
    - 下载 Go 依赖
-   - 构建后端
-   - 安装前端依赖
-   - 构建前端
+   - 构建后端 API 服务
 
 5. **配置服务**（Linux 系统可选）
    - 配置 systemd 服务
@@ -53,9 +49,16 @@ cd ai-diet-assistant
 
 ### 安装完成
 
-安装完成后，应用会自动启动（如果配置了服务）。
+安装完成后，后端 API 服务会自动启动（如果配置了服务）。
 
-访问：**http://localhost:9090**
+**后端 API 地址**：http://localhost:9090
+
+**健康检查**：http://localhost:9090/health
+
+**注意**：本项目是纯后端 API 服务，不包含前端界面。如需访问 API，请：
+- 使用 API 客户端（如 Postman、curl）
+- 开发自己的前端应用
+- 配置 Nginx 作为反向代理（生产环境推荐）
 
 ### 服务管理（Linux）
 
@@ -90,88 +93,107 @@ sudo journalctl -u diet-assistant -f
 
 ### 开发模式
 
-如果需要前后端分离开发（热重载）：
+开发模式下，可以使用热重载：
 
 ```bash
-# 启动后端
-./scripts/start.sh
+# 安装 air（Go 热重载工具）
+go install github.com/cosmtrek/air@latest
 
-# 启动前端（新终端）
-cd web/frontend && npm run dev
+# 启动热重载
+air
+
+# 或直接运行
+./scripts/start.sh
 ```
 
 访问：
-- 前端：http://localhost:3000
-- 后端：http://localhost:9090
+- 后端 API：http://localhost:9090
+- 健康检查：http://localhost:9090/health
+- API 文档：查看 docs/api/ 目录
 
-### 登录
+### 测试 API
 
-#### Demo 模式
+使用 curl 测试 API：
 
-点击 "Login with Test Account" 按钮即可登录。
+```bash
+# 健康检查
+curl http://localhost:9090/health
 
-#### 生产模式
+# 登录获取 Token
+curl -X POST http://localhost:9090/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your_username",
+    "password": "your_password"
+  }'
 
-使用安装时配置的用户名和密码登录。
+# 使用 Token 访问 API
+curl -X GET http://localhost:9090/api/v1/foods \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
 
-## 📱 功能概览
+## 📱 API 功能概览
 
-登录后，你可以：
+本系统提供 33 个 RESTful API 接口，涵盖以下功能模块：
 
-1. **Dashboard（仪表盘）**
-   - 查看今日营养摄入
-   - 查看未来饮食计划
-   - 快速访问各功能模块
+1. **认证模块** (4 个接口)
+   - 用户登录、Token 刷新、登出、密码修改
 
-2. **Supermarket（超市）**
-   - 添加食材到你的食材库
-   - 记录价格和营养信息
-   - 按分类管理食材
+2. **食材管理** (6 个接口)
+   - 创建、查询、更新、删除食材，支持批量导入
 
-3. **Meals（餐饮记录）**
-   - 记录每日餐饮
-   - 自动计算营养摄入
-   - 查看历史记录
+3. **餐饮记录** (5 个接口)
+   - 记录每日餐饮，自动计算营养摄入
 
-4. **Plans（饮食计划）**
-   - AI 生成个性化饮食计划
-   - 基于你的食材库
-   - 考虑营养平衡
+4. **饮食计划** (6 个接口)
+   - AI 生成个性化饮食计划，管理计划
 
-5. **Nutrition（营养分析）**
-   - 每日营养统计
-   - 月度趋势分析
-   - 实际与目标对比
+5. **AI 服务** (3 个接口)
+   - AI 对话、餐饮建议、对话历史
 
-6. **Chat（AI 对话）**
-   - 与 AI 助手对话
-   - 获取饮食建议
-   - 查看对话历史
+6. **营养分析** (3 个接口)
+   - 每日统计、月度趋势、营养对比
 
-7. **Settings（设置）**
-   - 配置 AI Provider
-   - 设置营养目标
-   - 管理用户偏好
+7. **Dashboard** (1 个接口)
+   - 获取仪表盘数据
+
+8. **设置管理** (5 个接口)
+   - AI 设置、用户偏好、用户资料
+
+详细 API 文档请参考：[docs/api/README.md](docs/api/README.md)
 
 ## 🔧 配置 AI Provider
 
-1. 访问 **Settings** 页面
-2. 选择 AI Provider（OpenAI、DeepSeek 或自定义）
-3. 输入 API Key
-4. 点击 "Test Connection" 验证
-5. 保存配置
+通过 API 配置 AI Provider：
+
+```bash
+# 更新 AI 设置
+curl -X PUT http://localhost:9090/api/v1/settings/ai \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "openai",
+    "api_key": "your_api_key",
+    "model": "gpt-4",
+    "base_url": "https://api.openai.com/v1"
+  }'
+
+# 测试 AI 连接
+curl -X GET http://localhost:9090/api/v1/settings/ai/test \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
 
 ## 📝 常见问题
 
-### 前端无法连接后端
+### API 无法访问
 
-**问题**：前端显示 "Cannot connect to backend API"
+**问题**：无法访问 API 接口
 
 **解决方案**：
 1. 确保后端正在运行：`curl http://localhost:9090/health`
-2. 检查前端配置：`cat web/frontend/.env.local`
-3. 确认 `NEXT_PUBLIC_API_URL` 设置正确
-4. 或启用 Demo 模式：设置 `NEXT_PUBLIC_DEMO_MODE=true`
+2. 检查服务状态：`sudo systemctl status diet-assistant`
+3. 查看日志：`tail -f logs/app.log`
+4. 检查端口是否被占用：`lsof -i :9090`
 
 ### 数据库连接失败
 
@@ -185,41 +207,29 @@ cd web/frontend && npm run dev
 
 ### 端口已被占用
 
-**问题**：启动时提示端口 9090 或 3000 已被占用
+**问题**：启动时提示端口 9090 已被占用
 
 **解决方案**：
 ```bash
 # 查找占用端口的进程
-lsof -i :9090  # 后端
-lsof -i :3000  # 前端
+lsof -i :9090
 
 # 停止进程
 kill -9 <PID>
 
 # 或修改端口配置
-# 后端：编辑 .env 中的 SERVER_PORT
-# 前端：Next.js 会自动使用下一个可用端口
+vim configs/config.yaml
+# 修改 server.port 配置
 ```
 
-### 前端依赖安装失败
+### CORS 错误
 
-**问题**：`npm install` 失败
+**问题**：前端调用 API 时出现 CORS 错误
 
 **解决方案**：
-```bash
-# 清理缓存
-cd web/frontend
-rm -rf node_modules package-lock.json
-npm cache clean --force
-
-# 重新安装
-npm install
-
-# 或使用 yarn/pnpm
-yarn install
-# 或
-pnpm install
-```
+1. **开发环境**：后端已移除 CORS 中间件，需要配置 Nginx
+2. **生产环境**：必须使用 Nginx 处理 CORS
+3. 参考 [Nginx 配置指南](docs/NGINX_CONFIGURATION.md) 配置 CORS
 
 ## 🛠️ 开发模式
 
@@ -234,30 +244,53 @@ go install github.com/cosmtrek/air@latest
 air
 ```
 
-**前端**（Next.js 自带）：
-```bash
-cd web/frontend
-npm run dev
-```
-
 ### 查看日志
 
 **后端日志**：
 ```bash
+# 应用日志
 tail -f logs/app.log
-# 或
-tail -f logs/backend.log  # 使用 start-all.sh 时
+
+# 系统服务日志
+sudo journalctl -u diet-assistant -f
 ```
 
-**前端日志**：
-在浏览器控制台查看（F12 → Console）
+### 使用 Nginx 反向代理（推荐）
+
+开发环境也可以配置 Nginx：
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+
+    # CORS 配置
+    add_header 'Access-Control-Allow-Origin' '*' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
+
+    if ($request_method = 'OPTIONS') {
+        return 204;
+    }
+
+    # 代理到后端
+    location / {
+        proxy_pass http://localhost:9090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+详细配置请参考：[Nginx 配置指南](docs/NGINX_CONFIGURATION.md)
 
 ## 📚 下一步
 
 - 阅读完整文档：[README.md](README.md)
-- 查看 API 文档：[docs/api.md](docs/api.md)
-- 了解部署指南：[README.md#生产部署](README.md#生产部署)
-- 配置 AI Provider：在 Settings 页面配置
+- 查看 API 文档：[docs/api/README.md](docs/api/README.md)
+- 配置 Nginx：[docs/NGINX_CONFIGURATION.md](docs/NGINX_CONFIGURATION.md)
+- 了解安装详情：[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+- 查看安全指南：[docs/SECURITY.md](docs/SECURITY.md)
 
 ## 🆘 获取帮助
 

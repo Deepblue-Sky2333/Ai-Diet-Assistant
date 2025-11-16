@@ -24,7 +24,7 @@ func (r *FoodRepository) CreateFood(food *model.Food) error {
 		INSERT INTO foods (user_id, name, category, price, unit, protein, carbs, fat, fiber, calories, available)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	
+
 	result, err := r.db.Exec(
 		query,
 		food.UserID,
@@ -60,7 +60,7 @@ func (r *FoodRepository) UpdateFood(userID, foodID int64, food *model.Food) erro
 		    fat = ?, fiber = ?, calories = ?, available = ?
 		WHERE id = ? AND user_id = ?
 	`
-	
+
 	result, err := r.db.Exec(
 		query,
 		food.Name,
@@ -95,7 +95,7 @@ func (r *FoodRepository) UpdateFood(userID, foodID int64, food *model.Food) erro
 // DeleteFood deletes a food item (with ownership verification)
 func (r *FoodRepository) DeleteFood(userID, foodID int64) error {
 	query := `DELETE FROM foods WHERE id = ? AND user_id = ?`
-	
+
 	result, err := r.db.Exec(query, foodID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete food: %w", err)
@@ -121,7 +121,7 @@ func (r *FoodRepository) GetFoodByID(userID, foodID int64) (*model.Food, error) 
 		FROM foods
 		WHERE id = ? AND user_id = ?
 	`
-	
+
 	food := &model.Food{}
 	err := r.db.QueryRow(query, foodID, userID).Scan(
 		&food.ID,
@@ -253,7 +253,7 @@ func (r *FoodRepository) BatchInsertFoods(userID int64, foods []*model.Food) err
 	for _, food := range foods {
 		// Force user_id to the authenticated user
 		food.UserID = userID
-		
+
 		_, err := stmt.Exec(
 			food.UserID,
 			food.Name,

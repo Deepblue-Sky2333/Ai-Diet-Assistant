@@ -35,17 +35,17 @@ type TokenPair struct {
 
 // JWTService JWT 服务
 type JWTService struct {
-	secret                []byte
-	accessTokenDuration   time.Duration
-	refreshTokenDuration  time.Duration
+	secret               []byte
+	accessTokenDuration  time.Duration
+	refreshTokenDuration time.Duration
 }
 
 // NewJWTService 创建 JWT 服务实例
 func NewJWTService(secret string, accessTokenHours, refreshTokenHours int) *JWTService {
 	return &JWTService{
-		secret:                []byte(secret),
-		accessTokenDuration:   time.Duration(accessTokenHours) * time.Hour,
-		refreshTokenDuration:  time.Duration(refreshTokenHours) * time.Hour,
+		secret:               []byte(secret),
+		accessTokenDuration:  time.Duration(accessTokenHours) * time.Hour,
+		refreshTokenDuration: time.Duration(refreshTokenHours) * time.Hour,
 	}
 }
 
@@ -140,4 +140,3 @@ func (j *JWTService) ValidatePasswordVersion(claims *Claims, currentPasswordVers
 	}
 	return nil
 }
-

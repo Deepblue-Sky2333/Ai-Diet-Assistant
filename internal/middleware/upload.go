@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -21,11 +21,11 @@ var AllowedFileTypes = map[string][]string{
 	"image/gif":  {".gif"},
 	"image/webp": {".webp"},
 	// 文档类型
-	"application/pdf":                                                   {".pdf"},
-	"application/vnd.ms-excel":                                          {".xls"},
+	"application/pdf":          {".pdf"},
+	"application/vnd.ms-excel": {".xls"},
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {".xlsx"},
-	"text/csv":                                                          {".csv"},
-	"text/plain":                                                        {".txt"},
+	"text/csv":   {".csv"},
+	"text/plain": {".txt"},
 	// JSON 类型（用于批量导入）
 	"application/json": {".json"},
 }
@@ -141,7 +141,7 @@ func validateFile(fileHeader *multipart.FileHeader, config FileValidationConfig,
 
 		// 检测实际的 MIME 类型
 		detectedMimeType := http.DetectContentType(buffer[:n])
-		
+
 		// 验证 MIME 类型
 		if !isMimeTypeAllowed(detectedMimeType, config) {
 			logger.Warn("File content does not match extension",
@@ -217,7 +217,7 @@ func RequestSizeLimitMiddleware(maxSize int64, logger *zap.Logger) gin.HandlerFu
 		// 尝试读取一个字节来触发大小检查
 		var buf bytes.Buffer
 		_, err := io.CopyN(&buf, c.Request.Body, 1)
-		
+
 		if err != nil && err.Error() == "http: request body too large" {
 			logger.Warn("Request body too large",
 				zap.String("path", c.Request.URL.Path),

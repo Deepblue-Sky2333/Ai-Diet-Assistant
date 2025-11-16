@@ -69,24 +69,25 @@ cd web/frontend && npm run dev
 
 ### 🏗️ 技术栈
 
-**前端：**
-- Next.js 15 + React 19
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui
-
 **后端：**
-- Go 1.25.4
+- Go 1.21+
 - Gin Web Framework
 - MySQL 8.0+
+- Redis 6+ (可选)
 - JWT 认证
+
+**部署：**
+- Nginx (反向代理和 CORS 处理)
+- Systemd (服务管理)
 
 ### 📚 文档
 
-- [快速开始](QUICKSTART.md) - 5分钟一键安装
-- [API 文档](docs/API.md) - API 接口说明
+- [快速开始](QUICKSTART.md) - 快速安装和部署
+- [安装指南](INSTALLATION_GUIDE.md) - 详细安装步骤
+- [API 文档](docs/api/README.md) - 完整 API 接口说明
+- [Nginx 配置](docs/NGINX_CONFIGURATION.md) - Nginx 反向代理配置指南
 - [安全最佳实践](docs/SECURITY.md) - 安全配置指南
-- [前端文档](web/frontend/README.md) - 前端开发文档
+- [错误码说明](docs/ERROR_CODES.md) - 错误码参考
 
 ### 🔧 开发
 
@@ -94,32 +95,135 @@ cd web/frontend && npm run dev
 # 后端开发
 make run
 
-# 前端开发
-cd web/frontend
-npm run dev
-
 # 运行测试
-make test
+go test ./...
 
 # 代码检查
-make lint
+go vet ./...
+golint ./...
 ```
+
+### 🚀 生产部署
+
+#### 系统要求
+
+- Go 1.21+
+- MySQL 8.0+
+- Redis 6+ (可选，用于 Token 黑名单)
+- Nginx (推荐，用于反向代理和 CORS 处理)
+
+#### 部署步骤
+
+1. **安装依赖**
+   ```bash
+   # 安装 Go, PostgreSQL, Redis
+   # 参考 INSTALLATION_GUIDE.md
+   ```
+
+2. **配置应用**
+   ```bash
+   # 复制配置文件
+   cp configs/config.yaml.example configs/config.yaml
+   
+   # 编辑配置文件
+   vim configs/config.yaml
+   ```
+
+3. **初始化数据库**
+   ```bash
+   # 运行数据库迁移
+   ./scripts/run-migrations.sh
+   ```
+
+4. **构建应用**
+   ```bash
+   # 构建二进制文件
+   go build -o bin/diet-assistant cmd/server/main.go
+   ```
+
+5. **配置 Nginx**
+   
+   后端是纯 API 服务，需要 Nginx 处理：
+   - 反向代理
+   - CORS 跨域请求
+   - SSL/TLS 终止
+   - 负载均衡（可选）
+   
+   详细配置请参考：[Nginx 配置指南](docs/NGINX_CONFIGURATION.md)
+
+6. **配置系统服务**
+   ```bash
+   # 复制服务文件
+   sudo cp scripts/diet-assistant.service /etc/systemd/system/
+   
+   # 启动服务
+   sudo systemctl enable diet-assistant
+   sudo systemctl start diet-assistant
+   ```
+
+7. **验证部署**
+   ```bash
+   # 检查服务状态
+   sudo systemctl status diet-assistant
+   
+   # 测试健康检查
+   curl http://localhost:9090/health
+   ```
+
+#### Nginx 配置示例
+
+```nginx
+server {
+    listen 80;
+    server_name api.yourdomain.com;
+
+    # CORS 配置
+    add_header 'Access-Control-Allow-Origin' '$http_origin' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
+    add_header 'Access-Control-Allow-Credentials' 'true' always;
+
+    # 处理 OPTIONS 请求
+    if ($request_method = 'OPTIONS') {
+        return 204;
+    }
+
+    # 代理到后端
+    location / {
+        proxy_pass http://localhost:9090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+完整配置和 HTTPS 设置请参考：[Nginx 配置指南](docs/NGINX_CONFIGURATION.md)
 
 ### 📝 项目结构
 
 ```
 .
 ├── cmd/                    # 应用程序入口
+│   └── server/            # 主服务器
 ├── internal/              # 私有应用代码
 │   ├── handler/          # HTTP 处理器
 │   ├── service/          # 业务逻辑层
 │   ├── repository/       # 数据访问层
-│   └── middleware/       # 中间件
-├── web/frontend/         # Next.js 前端应用
+│   ├── middleware/       # 中间件
+│   ├── model/            # 数据模型
+│   ├── config/           # 配置管理
+│   ├── database/         # 数据库连接
+│   ├── ai/               # AI 服务集成
+│   └── utils/            # 工具函数
 ├── configs/              # 配置文件
 ├── migrations/           # 数据库迁移
 ├── scripts/              # 部署和管理脚本
-└── docs/                 # 文档
+├── docs/                 # 文档
+│   ├── api/             # API 文档
+│   └── NGINX_CONFIGURATION.md  # Nginx 配置指南
+└── bin/                  # 编译后的二进制文件
 ```
 
 ### 📄 许可证

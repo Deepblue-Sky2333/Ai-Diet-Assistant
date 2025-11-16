@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // SettingsHandler 设置处理器
@@ -24,9 +24,9 @@ type UpdateAISettingsRequest struct {
 	Provider    string  `json:"provider" binding:"required,oneof=openai deepseek custom"`
 	APIEndpoint string  `json:"api_endpoint" binding:"omitempty,url,max=500"`
 	APIKey      string  `json:"api_key" binding:"omitempty,min=10,max=500"` // 可选，更新时可以不提供
-	Model       string  `json:"model" binding:"omitempty,max=100"`
-	Temperature float64 `json:"temperature" binding:"omitempty,min=0,max=2"`
-	MaxTokens   int     `json:"max_tokens" binding:"omitempty,min=1,max=32000"`
+	Model       string  `json:"model" binding:"omitempty,min=1,max=100"`
+	Temperature float64 `json:"temperature" binding:"omitempty,gte=0,lte=2"`
+	MaxTokens   int     `json:"max_tokens" binding:"omitempty,gte=1,lte=32000"`
 	IsActive    bool    `json:"is_active"`
 }
 

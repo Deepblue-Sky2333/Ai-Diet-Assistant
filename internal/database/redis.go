@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 

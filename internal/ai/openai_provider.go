@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// OpenAIProvider implements AIProvider for OpenAI API
+// OpenAIProvider implements Provider for OpenAI API
 type OpenAIProvider struct {
 	config     *ProviderConfig
 	httpClient *http.Client
@@ -180,7 +180,7 @@ func (p *OpenAIProvider) callAPI(ctx context.Context, messages []openAIMessage) 
 	}
 
 	if apiResponse.Error != nil {
-		return nil, fmt.Errorf("OpenAI API error: %s (type: %s, code: %s)", 
+		return nil, fmt.Errorf("OpenAI API error: %s (type: %s, code: %s)",
 			apiResponse.Error.Message, apiResponse.Error.Type, apiResponse.Error.Code)
 	}
 

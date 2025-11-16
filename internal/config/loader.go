@@ -97,42 +97,9 @@ func validateConfig(cfg *Config) error {
 	// 	return fmt.Errorf("ai api key is required")
 	// }
 
-	// 验证 CORS 配置
-	if err := validateCORSConfig(&cfg.CORS); err != nil {
-		return fmt.Errorf("invalid CORS configuration: %w", err)
-	}
-
 	// 创建必要的目录
 	if err := ensureDirectories(cfg); err != nil {
 		return fmt.Errorf("failed to create directories: %w", err)
-	}
-
-	return nil
-}
-
-// validateCORSConfig 验证 CORS 配置
-func validateCORSConfig(cors *CORSConfig) error {
-	if len(cors.AllowedOrigins) == 0 {
-		return fmt.Errorf("at least one allowed origin is required")
-	}
-
-	// 检查是否使用了通配符
-	for _, origin := range cors.AllowedOrigins {
-		if origin == "*" {
-			return fmt.Errorf("wildcard (*) is not allowed in CORS configuration for security reasons")
-		}
-		
-		// 验证域名格式（必须是完整URL或通配符子域名）
-		if !strings.HasPrefix(origin, "http://") && 
-		   !strings.HasPrefix(origin, "https://") && 
-		   !strings.HasPrefix(origin, "*.") {
-			return fmt.Errorf("invalid origin format '%s': must start with http://, https://, or *.", origin)
-		}
-		
-		// 检查是否包含其他位置的通配符
-		if strings.Contains(origin, "*") && !strings.HasPrefix(origin, "*.") {
-			return fmt.Errorf("wildcard (*) is only allowed at the beginning for subdomain matching (e.g., *.example.com)")
-		}
 	}
 
 	return nil

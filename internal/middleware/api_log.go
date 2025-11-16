@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
