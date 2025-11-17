@@ -5,6 +5,7 @@
 认证模块提供用户身份验证和授权功能，包括用户登录、Token 刷新、登出和密码修改。系统使用 JWT (JSON Web Token) 进行无状态认证，采用双 Token 机制（Access Token 和 Refresh Token）以提高安全性和用户体验。
 
 **核心功能**：
+- 用户注册新账户
 - 用户登录并获取 Token
 - 使用 Refresh Token 刷新 Access Token
 - 用户登出并使 Token 失效
@@ -22,6 +23,7 @@
 
 | 方法 | 端点 | 说明 | 认证 |
 |------|------|------|------|
+| POST | `/api/v1/auth/register` | 用户注册 | 否 |
 | POST | `/api/v1/auth/login` | 用户登录 | 否 |
 | POST | `/api/v1/auth/refresh` | 刷新 Token | 否 |
 | POST | `/api/v1/auth/logout` | 用户登出 | 是 |
@@ -30,6 +32,174 @@
 ---
 
 ## 接口详情
+
+### 用户注册
+
+**接口**: `POST /api/v1/auth/register`
+
+**说明**: 新用户注册账户。注册成功后返回用户信息，包括用户 ID、用户名、角色等。第一个注册的用户将自动成为管理员（admin），后续注册的用户为普通用户（user）。系统管理员可以通过系统设置关闭注册功能。
+
+**认证**: 否
+
+#### 请求参数
+
+##### 请求体
+
+```json
+{
+  "username": "testuser",
+  "password": "password123",
+  "email": "test@example.com"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 | 验证规则 |
+|------|------|------|------|----------|
+| username | string | 是 | 用户名 | 长度 3-50 字符，仅允许字母和数字 |
+| password | string | 是 | 密码 | 长度 8-128 字符 |
+| email | string | 否 | 电子邮件 | 有效的邮箱格式，最大长度 100 字符 |
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:9090/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "password123",
+    "email": "test@example.com"
+  }'
+```
+
+#### 响应示例
+
+**成功响应 (200) - 第一个用户（管理员）**:
+
+```json
+{
+  "code": 0,
+  "message": "user registered successfully",
+  "data": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "role": "admin",
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  "timestamp": 1699999999
+}
+```
+
+**成功响应 (200) - 后续用户（普通用户）**:
+
+```json
+{
+  "code": 0,
+  "message": "user registered successfully",
+  "data": {
+    "id": 2,
+    "username": "testuser",
+    "email": "test@example.com",
+    "role": "user",
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  "timestamp": 1699999999
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | int64 | 用户 ID |
+| username | string | 用户名 |
+| email | string | 电子邮件（如果提供） |
+| role | string | 用户角色：admin（管理员）或 user（普通用户） |
+| created_at | string | 账户创建时间（ISO 8601 格式） |
+
+**错误响应 (400) - 参数验证失败**:
+
+```json
+{
+  "code": 40001,
+  "message": "invalid parameters",
+  "error": "invalid request parameters: Key: 'RegisterRequest.Username' Error:Field validation for 'Username' failed on the 'min' tag",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (409) - 用户名已存在**:
+
+```json
+{
+  "code": 40901,
+  "message": "conflict",
+  "error": "username already exists",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (403) - 注册已关闭**:
+
+```json
+{
+  "code": 40301,
+  "message": "forbidden",
+  "error": "registration is currently disabled",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (500) - 内部错误**:
+
+```json
+{
+  "code": 50001,
+  "message": "internal server error",
+  "error": "failed to create user",
+  "timestamp": 1699999999
+}
+```
+
+#### 错误码
+
+| 错误码 | 说明 | 场景 |
+|--------|------|------|
+| 40001 | 参数错误 | 用户名或密码格式不正确、邮箱格式无效、缺少必填字段 |
+| 40301 | 禁止访问 | 系统管理员已关闭注册功能 |
+| 40901 | 冲突 | 用户名已被注册（不区分大小写） |
+| 50001 | 内部错误 | 服务器内部错误 |
+
+#### 注意事项
+
+1. **用户名唯一性**：用户名不区分大小写，例如 "TestUser" 和 "testuser" 被视为相同用户名
+2. **用户名存储**：系统保留用户输入的原始大小写格式
+3. **密码安全**：密码使用 bcrypt 算法加密存储，永不存储明文密码
+4. **第一个用户**：第一个注册的用户自动成为管理员，拥有系统管理权限
+5. **注册开关**：管理员可以通过系统设置关闭注册功能，关闭后此接口将返回 403 错误
+6. **注册后登录**：注册成功后需要调用登录接口获取 Token 才能访问受保护的 API
+7. **邮箱可选**：电子邮件地址是可选的，但建议提供以便后续功能（如密码重置）
+
+#### 安全建议
+
+1. **密码强度**：
+   - 虽然系统只要求最小 8 字符，但建议使用更强的密码
+   - 建议包含大小写字母、数字和特殊字符
+   - 避免使用常见密码和个人信息
+
+2. **用户名规范**：
+   - 仅允许字母和数字，防止注入攻击
+   - 建议使用有意义且易记的用户名
+
+3. **速率限制**：
+   - 系统对注册接口实施速率限制，防止恶意注册
+   - 建议客户端也实现防重复提交机制
+
+4. **前端验证**：
+   - 在提交前进行客户端验证，提升用户体验
+   - 检查注册是否开放（调用 `/api/v1/system/info` 接口）
+
+---
 
 ### 用户登录
 
@@ -387,21 +557,76 @@ curl -X PUT http://localhost:9090/api/v1/auth/password \
 ### 完整认证流程
 
 ```
-1. 用户登录
+1. 新用户注册（可选）
    ↓
-2. 获取 Access Token 和 Refresh Token
+2. 用户登录
    ↓
-3. 使用 Access Token 访问 API
+3. 获取 Access Token 和 Refresh Token
    ↓
-4. Access Token 过期
+4. 使用 Access Token 访问 API
    ↓
-5. 使用 Refresh Token 获取新的 Access Token
+5. Access Token 过期
    ↓
-6. 继续使用新的 Access Token 访问 API
+6. 使用 Refresh Token 获取新的 Access Token
    ↓
-7. Refresh Token 过期或用户登出
+7. 继续使用新的 Access Token 访问 API
    ↓
-8. 重新登录
+8. Refresh Token 过期或用户登出
+   ↓
+9. 重新登录
+```
+
+### 注册流程
+
+```javascript
+// 示例：用户注册流程
+async function register(username, password, email) {
+  try {
+    // 1. 检查注册是否开放（可选）
+    const systemInfo = await fetch('http://localhost:9090/api/v1/system/info');
+    const systemData = await systemInfo.json();
+    
+    if (!systemData.data.registration_enabled) {
+      alert('注册功能已关闭');
+      return;
+    }
+    
+    // 2. 调用注册接口
+    const response = await fetch('http://localhost:9090/api/v1/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password,
+        email: email
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.code === 0) {
+      // 注册成功
+      console.log('注册成功！用户角色：', data.data.role);
+      
+      // 3. 自动登录（可选）
+      await login(username, password);
+    } else {
+      // 注册失败
+      if (data.code === 40901) {
+        alert('用户名已存在');
+      } else if (data.code === 40301) {
+        alert('注册功能已关闭');
+      } else {
+        alert('注册失败：' + data.error);
+      }
+    }
+  } catch (error) {
+    console.error('注册请求失败:', error);
+    alert('网络错误，请稍后重试');
+  }
+}
 ```
 
 ### Token 刷新流程
@@ -550,6 +775,35 @@ async function logout() {
 ---
 
 ## 常见问题
+
+### Q: 如何注册新用户？
+
+A: 
+- 调用 `/api/v1/auth/register` 接口，提供用户名、密码和可选的邮箱
+- 第一个注册的用户将自动成为管理员
+- 注册成功后需要调用登录接口获取 Token
+- 如果注册功能被关闭，将返回 403 错误
+
+### Q: 用户名区分大小写吗？
+
+A: 
+- 用户名在唯一性检查时不区分大小写（"TestUser" 和 "testuser" 被视为相同）
+- 但系统会保留用户输入的原始大小写格式
+- 登录时用户名也不区分大小写
+
+### Q: 第一个用户为什么自动成为管理员？
+
+A: 
+- 这是为了确保系统至少有一个管理员账户
+- 第一个用户可以管理系统设置，包括控制注册开关
+- 后续用户默认为普通用户，需要管理员手动提升权限（如需要）
+
+### Q: 如何关闭注册功能？
+
+A: 
+- 管理员可以通过 `/api/v1/settings/system` 接口关闭注册
+- 关闭后，新用户无法通过注册接口创建账户
+- 管理员仍可以通过 CLI 工具创建用户
 
 ### Q: Access Token 和 Refresh Token 有什么区别？
 

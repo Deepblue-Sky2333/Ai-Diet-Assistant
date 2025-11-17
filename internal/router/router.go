@@ -6,6 +6,7 @@ import (
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/config"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/handler"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/middleware"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -13,14 +14,16 @@ import (
 
 // Handlers 包含所有处理器的结构
 type Handlers struct {
-	Auth      *handler.AuthHandler
-	Food      *handler.FoodHandler
-	Meal      *handler.MealHandler
-	Plan      *handler.PlanHandler
-	AI        *handler.AIHandler
-	Nutrition *handler.NutritionHandler
-	Dashboard *handler.DashboardHandler
-	Settings  *handler.SettingsHandler
+	Auth         *handler.AuthHandler
+	Food         *handler.FoodHandler
+	Meal         *handler.MealHandler
+	Plan         *handler.PlanHandler
+	AI           *handler.AIHandler
+	Nutrition    *handler.NutritionHandler
+	Dashboard    *handler.DashboardHandler
+	Settings     *handler.SettingsHandler
+	Conversation *handler.ConversationHandler
+	Message      *handler.MessageHandler
 }
 
 // SetupRouter 设置路由
@@ -36,7 +39,7 @@ type Handlers struct {
 //     router.POST("/upload", middleware.FileValidationMiddleware(uploadConfig, logger), handler)
 func SetupRouter(cfg *config.Config, logger *zap.Logger, jwtService *utils.JWTService, authService interface {
 	ValidateToken(ctx context.Context, token string) (*utils.Claims, error)
-}, handlers *Handlers) *gin.Engine {
+}, handlers *Handlers, userRepo repository.UserRepository) *gin.Engine {
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
 
@@ -66,6 +69,12 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, jwtService *utils.JWTSe
 		// 认证路由（不需要认证中间件）
 		handlers.Auth.RegisterRoutes(v1)
 
+		// 公开的系统信息路由（不需要认证）
+		system := v1.Group("/system")
+		{
+			system.GET("/info", handlers.Settings.GetSystemInfo)
+		}
+
 		// 需要认证的路由
 		authenticated := v1.Group("")
 		authenticated.Use(middleware.AuthMiddleware(jwtService, authService))
@@ -89,7 +98,13 @@ func SetupRouter(cfg *config.Config, logger *zap.Logger, jwtService *utils.JWTSe
 			handlers.Dashboard.RegisterRoutes(authenticated)
 
 			// 设置管理路由
-			handlers.Settings.RegisterRoutes(authenticated)
+			handlers.Settings.RegisterRoutes(authenticated, userRepo)
+
+			// 对话流管理路由
+			handlers.Conversation.RegisterRoutes(authenticated)
+
+			// 消息代理路由
+			handlers.Message.RegisterRoutes(authenticated)
 		}
 	}
 

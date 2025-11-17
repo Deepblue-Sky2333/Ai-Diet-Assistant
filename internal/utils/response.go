@@ -36,7 +36,9 @@ const (
 	CodeSuccess         = 0     // 成功
 	CodeInvalidParams   = 40001 // 参数错误（包括验证错误）
 	CodeUnauthorized    = 40101 // 未授权（包括认证失败、Token过期等）
+	CodeForbidden       = 40301 // 禁止访问（权限不足）
 	CodeNotFound        = 40401 // 资源不存在
+	CodeConflict        = 40901 // 资源冲突（如用户名已存在）
 	CodeTooManyRequests = 42901 // 请求过于频繁（限流）
 	CodeInternalError   = 50001 // 内部错误（包括加密错误等）
 	CodeDatabaseError   = 50002 // 数据库错误
@@ -48,7 +50,9 @@ var errorMessages = map[int]string{
 	CodeSuccess:         "success",
 	CodeInvalidParams:   "invalid parameters",
 	CodeUnauthorized:    "unauthorized",
+	CodeForbidden:       "forbidden",
 	CodeNotFound:        "resource not found",
+	CodeConflict:        "conflict",
 	CodeTooManyRequests: "too many requests",
 	CodeInternalError:   "internal server error",
 	CodeDatabaseError:   "database error",
@@ -265,8 +269,12 @@ func getHTTPStatusCode(code int) int {
 		return http.StatusBadRequest
 	case CodeUnauthorized:
 		return http.StatusUnauthorized
+	case CodeForbidden:
+		return http.StatusForbidden
 	case CodeNotFound:
 		return http.StatusNotFound
+	case CodeConflict:
+		return http.StatusConflict
 	case CodeTooManyRequests:
 		return http.StatusTooManyRequests
 	case CodeInternalError:
@@ -348,6 +356,8 @@ func getGenericErrorMessage(code int) string {
 		return "The request contains invalid parameters"
 	case CodeUnauthorized:
 		return "Authentication is required to access this resource"
+	case CodeForbidden:
+		return "You do not have permission to access this resource"
 	case CodeNotFound:
 		return "The requested resource was not found"
 	case CodeTooManyRequests:
@@ -393,6 +403,14 @@ func NewUnauthorizedError(message string, err error) *AppError {
 		message = "unauthorized"
 	}
 	return NewAppError(CodeUnauthorized, message, err)
+}
+
+// NewForbiddenError 创建禁止访问错误
+func NewForbiddenError(message string, err error) *AppError {
+	if message == "" {
+		message = "forbidden"
+	}
+	return NewAppError(CodeForbidden, message, err)
 }
 
 // NewNotFoundError 创建资源不存在错误

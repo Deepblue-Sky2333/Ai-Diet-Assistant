@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"time"
 
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
@@ -25,6 +26,22 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 type LoginRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=50,alphanum"`
 	Password string `json:"password" binding:"required,min=8,max=128"`
+}
+
+// RegisterRequest 注册请求
+type RegisterRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=50,alphanum"`
+	Password string `json:"password" binding:"required,min=8,max=128"`
+	Email    string `json:"email,omitempty" binding:"omitempty,email,max=100"`
+}
+
+// RegisterResponse 注册响应
+type RegisterResponse struct {
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email,omitempty"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // RefreshTokenRequest 刷新令牌请求
@@ -142,6 +159,53 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	utils.SuccessWithMessage(c, "logout successful", nil)
 }
 
+// Register 用户注册
+// @Summary 用户注册
+// @Description 新用户注册账户
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "注册请求"
+// @Success 200 {object} utils.Response{data=RegisterResponse}
+// @Failure 400 {object} utils.Response
+// @Failure 403 {object} utils.Response
+// @Failure 409 {object} utils.Response
+// @Failure 500 {object} utils.Response
+// @Router /api/v1/auth/register [post]
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid request parameters", err))
+		return
+	}
+
+	// 调用服务层注册
+	user, err := h.authService.Register(c.Request.Context(), req.Username, req.Password, req.Email)
+	if err != nil {
+		if errors.Is(err, service.ErrUsernameExists) {
+			utils.Error(c, utils.NewAppError(utils.CodeConflict, "username already exists", err))
+			return
+		}
+		if errors.Is(err, service.ErrRegistrationDisabled) {
+			utils.Error(c, utils.NewAppError(utils.CodeForbidden, "registration is currently disabled", err))
+			return
+		}
+		utils.Error(c, utils.NewAppError(utils.CodeInternalError, "registration failed", err))
+		return
+	}
+
+	// 构建响应
+	response := RegisterResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+	}
+
+	utils.SuccessWithMessage(c, "user registered successfully", response)
+}
+
 // ChangePassword 修改密码
 // @Summary 修改密码
 // @Description 用户修改登录密码
@@ -190,6 +254,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 func (h *AuthHandler) RegisterRoutes(router *gin.RouterGroup) {
 	auth := router.Group("/auth")
 	{
+		auth.POST("/register", h.Register) // 注册路由，不需要认证
 		auth.POST("/login", h.Login)
 		auth.POST("/refresh", h.RefreshToken)
 		auth.POST("/logout", h.Logout)

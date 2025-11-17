@@ -677,9 +677,9 @@ A: 营养数据的计算规则：
 
 ## 相关资源
 
-- [项目 README](../../README.md) - 项目概述和安装指南
-- [快速开始指南](../../QUICKSTART.md) - 快速部署和使用
+- [项目 README](../../README.md) - 项目概述、快速开始和安装指南
 - [安全文档](../SECURITY.md) - 安全最佳实践
+- [Nginx 配置](../NGINX_CONFIGURATION.md) - Nginx 反向代理配置指南
 - [OpenAPI 规范](../openapi.yaml) - OpenAPI 格式的 API 定义
 
 ---

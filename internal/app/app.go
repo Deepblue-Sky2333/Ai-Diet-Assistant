@@ -87,6 +87,9 @@ func (a *App) initDependencies() error {
 	aiSettingsRepo := repository.NewAISettingsRepository(a.db, cryptoService)
 	chatHistoryRepo := repository.NewChatHistoryRepository(a.db)
 	loginAttemptRepo := repository.NewLoginAttemptRepository(a.db)
+	systemSettingsRepo := repository.NewSystemSettingsRepository(a.db)
+	conversationRepo := repository.NewConversationRepository(a.db)
+	messageRepo := repository.NewMessageRepository(a.db)
 
 	// 创建令牌黑名单仓库（根据 Redis 是否可用选择实现）
 	var tokenBlacklistRepo repository.TokenBlacklistRepository
@@ -101,10 +104,18 @@ func (a *App) initDependencies() error {
 	a.logger.Info("All repositories initialized")
 
 	// ========== 创建所有 Service 实例 ==========
+	// 先创建 SettingsService，因为 AuthService 依赖它
+	settingsService := service.NewSettingsService(
+		aiSettingsRepo,
+		userPrefsRepo,
+		systemSettingsRepo,
+	)
+
 	authService := service.NewAuthService(
 		userRepo,
 		loginAttemptRepo,
 		tokenBlacklistRepo,
+		settingsService,
 		jwtService,
 		a.config.Security.MaxLoginAttempts,
 		a.config.Security.LockoutDuration,
@@ -119,7 +130,6 @@ func (a *App) initDependencies() error {
 	aiService := service.NewAIService(
 		aiSettingsRepo,
 		chatHistoryRepo,
-		foodRepo,
 	)
 
 	planService := service.NewPlanService(
@@ -135,9 +145,17 @@ func (a *App) initDependencies() error {
 		nutritionService,
 	)
 
-	settingsService := service.NewSettingsService(
+	// 创建对话流服务
+	conversationService := service.NewConversationService(
+		conversationRepo,
+		messageRepo,
+	)
+
+	// 创建消息代理服务
+	messageProxyService := service.NewMessageProxyService(
+		conversationRepo,
+		messageRepo,
 		aiSettingsRepo,
-		userPrefsRepo,
 	)
 
 	a.logger.Info("All services initialized")
@@ -151,23 +169,27 @@ func (a *App) initDependencies() error {
 	nutritionHandler := handler.NewNutritionHandler(nutritionService, userPrefsRepo)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService, userPrefsRepo)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
+	conversationHandler := handler.NewConversationHandler(conversationService)
+	messageHandler := handler.NewMessageHandler(messageProxyService)
 
 	a.logger.Info("All handlers initialized")
 
 	// ========== 创建 Handlers 结构 ==========
 	handlers := &router.Handlers{
-		Auth:      authHandler,
-		Food:      foodHandler,
-		Meal:      mealHandler,
-		Plan:      planHandler,
-		AI:        aiHandler,
-		Nutrition: nutritionHandler,
-		Dashboard: dashboardHandler,
-		Settings:  settingsHandler,
+		Auth:         authHandler,
+		Food:         foodHandler,
+		Meal:         mealHandler,
+		Plan:         planHandler,
+		AI:           aiHandler,
+		Nutrition:    nutritionHandler,
+		Dashboard:    dashboardHandler,
+		Settings:     settingsHandler,
+		Conversation: conversationHandler,
+		Message:      messageHandler,
 	}
 
 	// ========== 设置路由 ==========
-	a.router = router.SetupRouter(a.config, a.logger, jwtService, authService, handlers)
+	a.router = router.SetupRouter(a.config, a.logger, jwtService, authService, handlers, userRepo)
 	a.logger.Info("Router initialized successfully")
 
 	return nil

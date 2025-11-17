@@ -181,6 +181,6 @@ NEW_JWT_SECRET=$(openssl rand -base64 48)
 
 ## 📚 相关文档
 
-- [快速开始](../QUICKSTART.md)
-- [API 文档](API.md)
-- [集成模式](INTEGRATED_MODE.md)
+- [项目 README](../README.md) - 项目概述和安装指南
+- [API 文档](api/README.md) - 完整 API 接口说明
+- [Nginx 配置](NGINX_CONFIGURATION.md) - Nginx 反向代理配置指南

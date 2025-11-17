@@ -16,6 +16,10 @@ var (
 	ErrAccountLocked = errors.New("account locked due to too many failed login attempts")
 	// ErrInvalidCredentials 凭证无效
 	ErrInvalidCredentials = errors.New("invalid username or password")
+	// ErrUsernameExists 用户名已存在
+	ErrUsernameExists = errors.New("username already exists")
+	// ErrRegistrationDisabled 注册已关闭
+	ErrRegistrationDisabled = errors.New("registration is currently disabled")
 )
 
 // AuthService 认证服务接口
@@ -25,6 +29,7 @@ type AuthService interface {
 	ValidateToken(ctx context.Context, token string) (*utils.Claims, error)
 	Logout(ctx context.Context, token string) error
 	ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error
+	Register(ctx context.Context, username, password, email string) (*model.User, error)
 }
 
 // authService 认证服务实现
@@ -32,6 +37,7 @@ type authService struct {
 	userRepo           repository.UserRepository
 	loginAttemptRepo   repository.LoginAttemptRepository
 	tokenBlacklistRepo repository.TokenBlacklistRepository
+	settingsService    SettingsService
 	jwtService         *utils.JWTService
 	maxLoginAttempts   int
 	lockoutDuration    time.Duration
@@ -42,6 +48,7 @@ func NewAuthService(
 	userRepo repository.UserRepository,
 	loginAttemptRepo repository.LoginAttemptRepository,
 	tokenBlacklistRepo repository.TokenBlacklistRepository,
+	settingsService SettingsService,
 	jwtService *utils.JWTService,
 	maxLoginAttempts int,
 	lockoutDuration time.Duration,
@@ -50,6 +57,7 @@ func NewAuthService(
 		userRepo:           userRepo,
 		loginAttemptRepo:   loginAttemptRepo,
 		tokenBlacklistRepo: tokenBlacklistRepo,
+		settingsService:    settingsService,
 		jwtService:         jwtService,
 		maxLoginAttempts:   maxLoginAttempts,
 		lockoutDuration:    lockoutDuration,
@@ -231,4 +239,56 @@ func (s *authService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	}
 
 	return nil
+}
+
+// Register 用户注册
+func (s *authService) Register(ctx context.Context, username, password, email string) (*model.User, error) {
+	// 1. 检查注册开关状态
+	registrationEnabled, err := s.settingsService.IsRegistrationEnabled(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check registration status: %w", err)
+	}
+
+	if !registrationEnabled {
+		return nil, ErrRegistrationDisabled
+	}
+
+	// 2. 检查用户名唯一性（不区分大小写）
+	exists, err := s.userRepo.CheckUsernameExists(ctx, username)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check username exists: %w", err)
+	}
+
+	if exists {
+		return nil, ErrUsernameExists
+	}
+
+	// 3. 确定用户角色（第一个用户为管理员）
+	userCount, err := s.userRepo.GetUserCount(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user count: %w", err)
+	}
+
+	role := model.RoleUser // 默认为普通用户
+	if userCount == 0 {
+		role = model.RoleAdmin // 第一个用户为管理员
+	}
+
+	// 4. 创建用户
+	user := &model.User{
+		Username: username,
+		Email:    email,
+		Role:     role,
+	}
+
+	err = s.userRepo.CreateUser(ctx, user, password)
+	if err != nil {
+		if errors.Is(err, repository.ErrUserAlreadyExists) {
+			return nil, ErrUsernameExists
+		}
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// 5. 返回创建的用户信息
+	return user, nil
 }

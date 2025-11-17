@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/middleware"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
+	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/service"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"github.com/gin-gonic/gin"
@@ -332,13 +334,112 @@ func (h *SettingsHandler) UpdateUserPreferences(c *gin.Context) {
 	utils.SuccessWithMessage(c, "user preferences updated successfully", nil)
 }
 
+// GetSystemSettings 获取系统设置
+// @Summary 获取系统设置
+// @Description 获取系统级别的配置（需要管理员权限）
+// @Tags 设置
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.Response
+// @Failure 401 {object} utils.Response
+// @Failure 403 {object} utils.Response
+// @Router /api/v1/settings/system [get]
+func (h *SettingsHandler) GetSystemSettings(c *gin.Context) {
+	// 获取系统设置
+	settings, err := h.settingsService.GetSystemSettings(c.Request.Context())
+	if err != nil {
+		utils.Error(c, utils.NewAppError(utils.CodeInternalError, "failed to get system settings", err))
+		return
+	}
+
+	utils.Success(c, settings)
+}
+
+// UpdateSystemSettingsRequest 更新系统设置请求
+type UpdateSystemSettingsRequest struct {
+	RegistrationEnabled *bool `json:"registration_enabled,omitempty"`
+}
+
+// UpdateSystemSettings 更新系统设置
+// @Summary 更新系统设置
+// @Description 更新系统级别的配置（需要管理员权限）
+// @Tags 设置
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body UpdateSystemSettingsRequest true "系统设置"
+// @Success 200 {object} utils.Response
+// @Failure 400 {object} utils.Response
+// @Failure 401 {object} utils.Response
+// @Failure 403 {object} utils.Response
+// @Router /api/v1/settings/system [put]
+func (h *SettingsHandler) UpdateSystemSettings(c *gin.Context) {
+	var req UpdateSystemSettingsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "invalid request parameters", err))
+		return
+	}
+
+	// 构建设置映射
+	settings := make(map[string]interface{})
+	if req.RegistrationEnabled != nil {
+		settings["registration_enabled"] = *req.RegistrationEnabled
+	}
+
+	// 如果没有提供任何设置，返回错误
+	if len(settings) == 0 {
+		utils.Error(c, utils.NewAppError(utils.CodeInvalidParams, "no settings provided", nil))
+		return
+	}
+
+	// 更新系统设置
+	err := h.settingsService.UpdateSystemSettings(c.Request.Context(), settings)
+	if err != nil {
+		utils.Error(c, utils.NewAppError(utils.CodeInternalError, "failed to update system settings", err))
+		return
+	}
+
+	utils.SuccessWithMessage(c, "system settings updated successfully", nil)
+}
+
+// GetSystemInfo 获取公开的系统信息
+// @Summary 获取公开的系统信息
+// @Description 获取系统的公开信息，如注册是否开放、版本号等（无需认证）
+// @Tags 系统
+// @Accept json
+// @Produce json
+// @Success 200 {object} utils.Response
+// @Failure 500 {object} utils.Response
+// @Router /api/v1/system/info [get]
+func (h *SettingsHandler) GetSystemInfo(c *gin.Context) {
+	// 获取注册开关状态
+	registrationEnabled, err := h.settingsService.IsRegistrationEnabled(c.Request.Context())
+	if err != nil {
+		// 如果获取失败，默认返回 true（允许注册）
+		registrationEnabled = false
+	}
+
+	// 构建响应
+	info := gin.H{
+		"registration_enabled": registrationEnabled,
+		"version":              "1.0.0", // 可以从配置或常量中读取
+	}
+
+	utils.Success(c, info)
+}
+
 // RegisterRoutes 注册设置相关路由
-func (h *SettingsHandler) RegisterRoutes(router *gin.RouterGroup) {
+func (h *SettingsHandler) RegisterRoutes(router *gin.RouterGroup, userRepo repository.UserRepository) {
 	settings := router.Group("/settings")
 	{
 		settings.GET("", h.GetSettings)
 		settings.PUT("/ai", h.UpdateAISettings)
 		settings.GET("/ai/test", h.TestAIConnection)
+
+		// 系统设置路由（需要管理员权限）
+		settings.GET("/system", middleware.AdminMiddleware(userRepo), h.GetSystemSettings)
+		settings.PUT("/system", middleware.AdminMiddleware(userRepo), h.UpdateSystemSettings)
 	}
 
 	user := router.Group("/user")

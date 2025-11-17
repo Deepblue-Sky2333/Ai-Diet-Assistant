@@ -27,17 +27,6 @@ go.work
 configs/config.yaml
 configs/module.conf.backup.*
 
-# Frontend
-web/frontend/.env.local
-web/frontend/.env*.local
-web/frontend/node_modules/
-web/frontend/.next/
-web/frontend/out/
-web/frontend/.vercel
-web/frontend/pnpm-lock.yaml
-web/frontend/yarn.lock
-web/frontend/package-lock.json
-
 # Backend PID files
 .backend.pid
 
@@ -63,3 +52,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Backup files
+.backup/

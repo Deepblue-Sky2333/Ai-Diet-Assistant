@@ -27,6 +27,8 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, userID int64) (*model.User, error)
 	UpdatePassword(ctx context.Context, userID int64, newPasswordHash string) error
 	UpdatePasswordWithVersion(ctx context.Context, userID int64, newPasswordHash string, passwordVersion int64) error
+	CheckUsernameExists(ctx context.Context, username string) (bool, error)
+	GetUserCount(ctx context.Context) (int64, error)
 }
 
 // userRepository 用户仓储实现
@@ -49,10 +51,15 @@ func (r *userRepository) CreateUser(ctx context.Context, user *model.User, passw
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	// 如果未设置角色，默认为普通用户
+	if user.Role == "" {
+		user.Role = model.RoleUser
+	}
+
 	// 使用预编译语句防止 SQL 注入
 	query := `
-		INSERT INTO users (username, password_hash, password_version, email, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO users (username, password_hash, password_version, email, role, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	now := time.Now()
@@ -62,6 +69,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user *model.User, passw
 		passwordHash,
 		passwordVersion,
 		user.Email,
+		user.Role,
 		now,
 		now,
 	)
@@ -93,18 +101,20 @@ func (r *userRepository) CreateUser(ctx context.Context, user *model.User, passw
 func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	// 使用预编译语句防止 SQL 注入
 	query := `
-		SELECT id, username, password_hash, password_version, email, created_at, updated_at
+		SELECT id, username, password_hash, password_version, email, role, created_at, updated_at
 		FROM users
 		WHERE username = ?
 	`
 
 	user := &model.User{}
+	var role sql.NullString
 	err := r.db.QueryRowContext(ctx, query, username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.PasswordHash,
 		&user.PasswordVersion,
 		&user.Email,
+		&role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -116,6 +126,13 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 		return nil, fmt.Errorf("failed to get user by username: %w", err)
 	}
 
+	// 处理可能为 NULL 的 role 字段
+	if role.Valid {
+		user.Role = role.String
+	} else {
+		user.Role = model.RoleUser
+	}
+
 	return user, nil
 }
 
@@ -123,18 +140,20 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 func (r *userRepository) GetUserByID(ctx context.Context, userID int64) (*model.User, error) {
 	// 使用预编译语句防止 SQL 注入
 	query := `
-		SELECT id, username, password_hash, password_version, email, created_at, updated_at
+		SELECT id, username, password_hash, password_version, email, role, created_at, updated_at
 		FROM users
 		WHERE id = ?
 	`
 
 	user := &model.User{}
+	var role sql.NullString
 	err := r.db.QueryRowContext(ctx, query, userID).Scan(
 		&user.ID,
 		&user.Username,
 		&user.PasswordHash,
 		&user.PasswordVersion,
 		&user.Email,
+		&role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -144,6 +163,13 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID int64) (*model.
 			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user by id: %w", err)
+	}
+
+	// 处理可能为 NULL 的 role 字段
+	if role.Valid {
+		user.Role = role.String
+	} else {
+		user.Role = model.RoleUser
 	}
 
 	return user, nil
@@ -199,6 +225,32 @@ func (r *userRepository) UpdatePasswordWithVersion(ctx context.Context, userID i
 	}
 
 	return nil
+}
+
+// CheckUsernameExists 检查用户名是否存在（不区分大小写）
+func (r *userRepository) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
+	query := `SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)`
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, username).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed to check username exists: %w", err)
+	}
+
+	return count > 0, nil
+}
+
+// GetUserCount 获取用户总数
+func (r *userRepository) GetUserCount(ctx context.Context) (int64, error) {
+	query := `SELECT COUNT(*) FROM users`
+
+	var count int64
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user count: %w", err)
+	}
+
+	return count, nil
 }
 
 // isDuplicateKeyError 检查是否是唯一键冲突错误

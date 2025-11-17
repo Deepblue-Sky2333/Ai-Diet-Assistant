@@ -10,7 +10,7 @@ info:
     - Meal tracking and recording
     - AI-powered meal plan generation
     - Nutrition analysis and statistics
-    - Conversation with AI assistant
+    - AI conversation flow management with message proxy
     
     ## Authentication
     Most endpoints require JWT Bearer token authentication.
@@ -39,8 +39,10 @@ tags:
     description: Meal records management
   - name: Plans
     description: Meal plans management
-  - name: AI
-    description: AI services and chat
+  - name: Conversations
+    description: AI conversation flow management
+  - name: Messages
+    description: AI message proxy and history
   - name: Nutrition
     description: Nutrition analysis and statistics
   - name: Dashboard
@@ -316,6 +318,96 @@ components:
         updated_at:
           type: string
           format: date-time
+    
+    ConversationFlow:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        user_id:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          maxLength: 200
+          example: "Meal planning discussion"
+        is_favorited:
+          type: boolean
+          example: false
+        message_count:
+          type: integer
+          example: 5
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        conversation_id:
+          type: integer
+          format: int64
+          example: 1
+        role:
+          type: string
+          enum: [user, assistant]
+          example: "user"
+        content:
+          type: string
+          example: "What should I eat for dinner?"
+        created_at:
+          type: string
+          format: date-time
+    
+    CreateConversationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          example: "New conversation"
+    
+    UpdateConversationRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          example: "Updated conversation title"
+    
+    SendMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          maxLength: 10485760
+          example: "What should I eat for dinner?"
+    
+    ExportConversationsRequest:
+      type: object
+      required:
+        - conversation_ids
+      properties:
+        conversation_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [1, 2, 3]
 
 paths:
   /auth/login:
@@ -728,30 +820,45 @@ paths:
                         items:
                           $ref: '#/components/schemas/Plan'
   
-  /ai/chat:
-    post:
+  /conversations:
+    get:
       tags:
-        - AI
-      summary: Chat with AI
-      description: Have a conversation with AI assistant
-      operationId: chatWithAI
+        - Conversations
+      summary: List conversation flows
+      description: Get paginated list of conversation flows with optional filtering
+      operationId: listConversations
       security:
         - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - message
-              properties:
-                message:
-                  type: string
-                  example: "What should I eat for dinner?"
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: is_favorited
+          in: query
+          schema:
+            type: boolean
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at]
+            default: updated_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
       responses:
         '200':
-          description: AI response
+          description: List of conversation flows
           content:
             application/json:
               schema:
@@ -760,12 +867,435 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          response:
-                            type: string
-                          tokens_used:
-                            type: integer
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ConversationFlow'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+    
+    post:
+      tags:
+        - Conversations
+      summary: Create conversation flow
+      description: Create a new conversation flow
+      operationId: createConversation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+      responses:
+        '201':
+          description: Conversation created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ConversationFlow'
+        '403':
+          description: Recent conversation limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /conversations/search:
+    get:
+      tags:
+        - Conversations
+      summary: Search conversation flows
+      description: Search conversation flows by keyword in title
+      operationId: searchConversations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: is_favorited
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ConversationFlow'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+  
+  /conversations/export:
+    post:
+      tags:
+        - Conversations
+      summary: Export multiple conversations
+      description: Export multiple conversation flows to JSON format
+      operationId: exportConversations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportConversationsRequest'
+      responses:
+        '200':
+          description: Conversations exported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    example: "1.0"
+                  exported_at:
+                    type: string
+                    format: date-time
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+  
+  /conversations/{id}:
+    get:
+      tags:
+        - Conversations
+      summary: Get conversation flow
+      description: Get conversation flow by ID
+      operationId: getConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Conversation flow details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ConversationFlow'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags:
+        - Conversations
+      summary: Update conversation title
+      description: Update the title of a conversation flow
+      operationId: updateConversationTitle
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConversationRequest'
+      responses:
+        '200':
+          description: Conversation updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ConversationFlow'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Conversations
+      summary: Delete conversation flow
+      description: Delete a conversation flow and all its messages
+      operationId: deleteConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Conversation deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /conversations/{id}/favorite:
+    post:
+      tags:
+        - Conversations
+      summary: Favorite conversation
+      description: Mark a conversation flow as favorited
+      operationId: favoriteConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Conversation favorited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Favorite limit reached (max 100)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags:
+        - Conversations
+      summary: Unfavorite conversation
+      description: Remove favorite status from a conversation flow
+      operationId: unfavoriteConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Conversation unfavorited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /conversations/{id}/export:
+    get:
+      tags:
+        - Conversations
+      summary: Export conversation
+      description: Export a single conversation flow to JSON format
+      operationId: exportConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Conversation exported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    example: "1.0"
+                  exported_at:
+                    type: string
+                    format: date-time
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /conversations/{id}/messages:
+    get:
+      tags:
+        - Messages
+      summary: Get conversation messages
+      description: Get all messages for a conversation flow
+      operationId: getMessages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Messages
+      summary: Send message
+      description: Send a message to external AI service and store the conversation
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Message sent and AI response received
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Message'
+        '400':
+          description: Invalid request or message too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: External AI service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   
   /nutrition/daily/{date}:
     get:

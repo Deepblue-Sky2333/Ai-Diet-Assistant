@@ -2,6 +2,12 @@ package model
 
 import "time"
 
+// 角色常量
+const (
+	RoleAdmin = "admin"
+	RoleUser  = "user"
+)
+
 // User 用户模型
 type User struct {
 	ID              int64     `json:"id" db:"id"`
@@ -9,8 +15,14 @@ type User struct {
 	PasswordHash    string    `json:"-" db:"password_hash"`
 	PasswordVersion int64     `json:"-" db:"password_version"` // 密码版本（最后修改时间戳）
 	Email           string    `json:"email,omitempty" db:"email" binding:"omitempty,email,max=100"`
+	Role            string    `json:"role" db:"role"` // 用户角色
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// IsAdmin 检查用户是否为管理员
+func (u *User) IsAdmin() bool {
+	return u.Role == RoleAdmin
 }
 
 // CreateUserRequest 创建用户请求

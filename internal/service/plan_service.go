@@ -3,11 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
-	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/utils"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -37,77 +35,10 @@ func NewPlanService(
 }
 
 // GeneratePlan generates meal plans for future days using AI
+// NOTE: This method is deprecated and no longer functional after removing AI provider implementations.
+// It is kept for reference but will return an error if called.
 func (s *PlanService) GeneratePlan(ctx context.Context, userID int64, request *model.GeneratePlanRequest) ([]*model.Plan, error) {
-	// Validate input
-	if err := s.validate.Struct(request); err != nil {
-		return nil, fmt.Errorf("validation failed: %w", err)
-	}
-
-	// Set default days if not specified
-	days := request.Days
-	if days <= 0 {
-		days = 2 // Default to 2 days as per requirements
-	}
-
-	// Default target calories (can be retrieved from user preferences in the future)
-	targetCalories := 2000
-
-	// Call AI service to generate meal plan
-	aiResponse, err := s.aiService.GenerateMealPlan(ctx, userID, days, targetCalories)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate meal plan with AI: %w", err)
-	}
-
-	// Convert AI response to plan records
-	plans := make([]*model.Plan, 0)
-	now := time.Now()
-
-	for _, aiPlan := range aiResponse.Plans {
-		// Parse the date from AI response using unified date parsing
-		planDate, err := utils.ParseDate(aiPlan.Date)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse plan date %s: %w", aiPlan.Date, err)
-		}
-
-		// Convert ai.MealFood to model.MealFood
-		foods := make([]model.MealFood, len(aiPlan.Foods))
-		for i, f := range aiPlan.Foods {
-			foods[i] = model.MealFood{
-				FoodID: f.FoodID,
-				Name:   f.Name,
-				Amount: f.Amount,
-				Unit:   f.Unit,
-			}
-		}
-
-		// Calculate nutrition for this plan
-		nutrition, err := s.nutritionService.CalculateNutrition(userID, foods)
-		if err != nil {
-			return nil, fmt.Errorf("failed to calculate nutrition: %w", err)
-		}
-
-		plan := &model.Plan{
-			UserID:      userID,
-			PlanDate:    planDate,
-			MealType:    aiPlan.MealType,
-			Foods:       foods,
-			Nutrition:   *nutrition,
-			Status:      "pending",
-			AIReasoning: aiPlan.Reasoning,
-		}
-
-		// Create plan in database
-		if err := s.planRepo.CreatePlan(plan); err != nil {
-			return nil, fmt.Errorf("failed to create plan: %w", err)
-		}
-
-		plans = append(plans, plan)
-	}
-
-	// Log generation time
-	_ = now
-
-	return plans, nil
+	return nil, fmt.Errorf("AI-based meal plan generation is no longer supported - use the new message proxy service instead")
 }
 
 // GetPlan retrieves a plan record by ID

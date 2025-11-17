@@ -111,3 +111,19 @@ upload:
     - image/png
     - image/gif
   upload_path: uploads/
+
+# ============================================
+# AI Proxy Configuration
+# ============================================
+# AI 服务配置存储在数据库的 ai_settings 表中
+# AI service configuration is stored in the ai_settings table
+# 
+# 配置项包括 / Configuration includes:
+# - api_endpoint: 外部 AI 服务的 API 端点 / External AI service API endpoint
+# - api_key: API 密钥（加密存储）/ API key (encrypted storage)
+# - model: AI 模型名称 / AI model name
+# - timeout: 请求超时时间 / Request timeout
+# - max_retries: 最大重试次数 / Maximum retry attempts
+#
+# 通过管理界面或直接在数据库中配置
+# Configure via admin interface or directly in database

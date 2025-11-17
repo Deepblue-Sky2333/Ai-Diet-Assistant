@@ -34,6 +34,9 @@
 | GET | `/api/v1/settings` | 获取所有设置 | 是 |
 | PUT | `/api/v1/settings/ai` | 更新 AI 设置 | 是 |
 | GET | `/api/v1/settings/ai/test` | 测试 AI 连接 | 是 |
+| GET | `/api/v1/settings/system` | 获取系统设置 | 是（管理员） |
+| PUT | `/api/v1/settings/system` | 更新系统设置 | 是（管理员） |
+| GET | `/api/v1/system/info` | 获取公开系统信息 | 否 |
 | GET | `/api/v1/user/profile` | 获取用户资料 | 是 |
 | PUT | `/api/v1/user/preferences` | 更新用户偏好 | 是 |
 
@@ -480,6 +483,302 @@ curl -X GET "http://localhost:9090/api/v1/settings/ai/test" \
 ---
 
 
+### 获取系统设置
+
+**接口**: `GET /api/v1/settings/system`
+
+**说明**: 获取系统级别的设置，包括注册开关等。此接口仅限管理员访问，用于系统管理和配置。普通用户调用此接口将返回 403 错误。
+
+**认证**: 是（需要管理员权限）
+
+
+#### 请求参数
+
+无需任何参数，系统会返回所有系统设置。
+
+#### 请求示例
+
+```bash
+# 获取系统设置
+curl -X GET "http://localhost:9090/api/v1/settings/system" \
+  -H "Authorization: Bearer YOUR_ADMIN_ACCESS_TOKEN"
+
+# 使用环境变量存储 Token
+export ADMIN_TOKEN="YOUR_ADMIN_ACCESS_TOKEN"
+curl -X GET "http://localhost:9090/api/v1/settings/system" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+#### 响应示例
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "registration_enabled": true
+  },
+  "timestamp": 1699999999
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| registration_enabled | boolean | 是否允许新用户注册 |
+
+**错误响应 (401)**:
+
+```json
+{
+  "code": 40101,
+  "message": "unauthorized",
+  "error": "user not authenticated",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (403)**:
+
+```json
+{
+  "code": 40302,
+  "message": "forbidden",
+  "error": "admin access required",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (500)**:
+
+```json
+{
+  "code": 50001,
+  "message": "internal error",
+  "error": "failed to get system settings",
+  "timestamp": 1699999999
+}
+```
+
+#### 错误码
+
+| 错误码 | 说明 | 场景 |
+|--------|------|------|
+| 40101 | 未授权 | 用户未认证或 Token 无效 |
+| 40302 | 禁止访问 | 用户不是管理员 |
+| 50001 | 内部错误 | 服务器内部错误、数据库查询失败 |
+
+#### 注意事项
+
+1. **管理员权限**：只有管理员可以访问此接口
+2. **权限检查**：系统会验证用户的角色是否为 admin
+3. **第一个用户**：第一个注册的用户自动成为管理员
+4. **系统配置**：这些设置影响整个系统的行为
+5. **谨慎修改**：修改系统设置前请确保了解其影响
+
+---
+
+
+### 更新系统设置
+
+**接口**: `PUT /api/v1/settings/system`
+
+**说明**: 更新系统级别的设置。管理员可以通过此接口控制系统功能，如开启或关闭用户注册。此接口仅限管理员访问，普通用户调用将返回 403 错误。
+
+**认证**: 是（需要管理员权限）
+
+
+#### 请求参数
+
+##### 请求体
+
+```json
+{
+  "registration_enabled": false
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 | 验证规则 |
+|------|------|------|------|----------|
+| registration_enabled | boolean | 否 | 是否允许新用户注册 | true 或 false |
+
+#### 请求示例
+
+```bash
+# 关闭用户注册
+curl -X PUT "http://localhost:9090/api/v1/settings/system" \
+  -H "Authorization: Bearer YOUR_ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "registration_enabled": false
+  }'
+
+# 开启用户注册
+curl -X PUT "http://localhost:9090/api/v1/settings/system" \
+  -H "Authorization: Bearer YOUR_ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "registration_enabled": true
+  }'
+```
+
+#### 响应示例
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 0,
+  "message": "system settings updated successfully",
+  "data": null,
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (400)**:
+
+```json
+{
+  "code": 40001,
+  "message": "invalid parameters",
+  "error": "invalid request parameters",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (401)**:
+
+```json
+{
+  "code": 40101,
+  "message": "unauthorized",
+  "error": "user not authenticated",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (403)**:
+
+```json
+{
+  "code": 40302,
+  "message": "forbidden",
+  "error": "admin access required",
+  "timestamp": 1699999999
+}
+```
+
+**错误响应 (500)**:
+
+```json
+{
+  "code": 50001,
+  "message": "internal error",
+  "error": "failed to update system settings",
+  "timestamp": 1699999999
+}
+```
+
+#### 错误码
+
+| 错误码 | 说明 | 场景 |
+|--------|------|------|
+| 40001 | 参数错误 | 请求参数格式不正确 |
+| 40101 | 未授权 | 用户未认证或 Token 无效 |
+| 40302 | 禁止访问 | 用户不是管理员 |
+| 50001 | 内部错误 | 服务器内部错误、数据库更新失败 |
+
+#### 注意事项
+
+1. **管理员权限**：只有管理员可以修改系统设置
+2. **立即生效**：设置更新后立即生效
+3. **注册开关**：关闭注册后，新用户无法通过注册接口创建账户
+4. **CLI 工具**：即使关闭注册，管理员仍可通过 CLI 工具创建用户
+5. **现有用户**：关闭注册不影响现有用户的使用
+6. **谨慎操作**：修改系统设置前请确保了解其影响
+7. **可选字段**：所有字段都是可选的，可以只更新部分设置
+
+---
+
+
+### 获取公开系统信息
+
+**接口**: `GET /api/v1/system/info`
+
+**说明**: 获取公开的系统信息，包括注册是否开放、系统版本等。此接口无需认证，供前端在注册页面等场景使用，用于判断是否显示注册表单。
+
+**认证**: 否
+
+
+#### 请求参数
+
+无需任何参数。
+
+#### 请求示例
+
+```bash
+# 获取公开系统信息
+curl -X GET "http://localhost:9090/api/v1/system/info"
+
+# 使用 jq 格式化输出
+curl -X GET "http://localhost:9090/api/v1/system/info" | jq
+```
+
+#### 响应示例
+
+**成功响应 (200)**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "registration_enabled": true,
+    "version": "1.0.0"
+  },
+  "timestamp": 1699999999
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| registration_enabled | boolean | 是否允许新用户注册 |
+| version | string | 系统版本号 |
+
+**错误响应 (500)**:
+
+```json
+{
+  "code": 50001,
+  "message": "internal error",
+  "error": "failed to get system info",
+  "timestamp": 1699999999
+}
+```
+
+#### 错误码
+
+| 错误码 | 说明 | 场景 |
+|--------|------|------|
+| 50001 | 内部错误 | 服务器内部错误 |
+
+#### 注意事项
+
+1. **无需认证**：此接口公开访问，无需提供 Token
+2. **前端使用**：前端应在显示注册表单前调用此接口检查注册是否开放
+3. **缓存建议**：可以在客户端缓存此信息，但建议定期刷新
+4. **注册状态**：如果 registration_enabled 为 false，应隐藏或禁用注册表单
+5. **用户提示**：当注册关闭时，应向用户显示友好的提示信息
+6. **系统版本**：version 字段可用于版本检查和兼容性判断
+
+---
+
+
 ### 获取用户资料
 
 **接口**: `GET /api/v1/user/profile`
@@ -740,6 +1039,37 @@ curl -X PUT "http://localhost:9090/api/v1/user/preferences" \
 
 ## 数据模型
 
+### SystemSettings 模型
+
+系统设置模型：
+
+```typescript
+interface SystemSettings {
+  registration_enabled: boolean;  // 是否允许新用户注册
+}
+```
+
+### SystemInfo 模型
+
+公开系统信息模型：
+
+```typescript
+interface SystemInfo {
+  registration_enabled: boolean;  // 是否允许新用户注册
+  version: string;                // 系统版本号
+}
+```
+
+### UpdateSystemSettingsRequest 模型
+
+更新系统设置请求模型：
+
+```typescript
+interface UpdateSystemSettingsRequest {
+  registration_enabled?: boolean;  // 是否允许新用户注册（可选）
+}
+```
+
 ### AISettings 模型
 
 AI 设置模型：
@@ -811,7 +1141,59 @@ interface UpdateUserPreferencesRequest {
 
 ## 使用场景
 
-### 场景 1：首次配置 AI 服务
+### 场景 1：管理员关闭用户注册
+
+管理员想要关闭公开注册功能：
+
+```bash
+# 1. 管理员登录获取 Token
+curl -X POST "http://localhost:9090/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "adminpass123"
+  }'
+
+# 2. 关闭注册
+curl -X PUT "http://localhost:9090/api/v1/settings/system" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "registration_enabled": false
+  }'
+
+# 3. 验证设置
+curl -X GET "http://localhost:9090/api/v1/settings/system" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+```
+
+### 场景 2：前端检查注册状态
+
+前端在显示注册页面前检查注册是否开放：
+
+```javascript
+async function checkRegistrationStatus() {
+  try {
+    const response = await fetch('http://localhost:9090/api/v1/system/info');
+    const data = await response.json();
+    
+    if (data.code === 0) {
+      if (data.data.registration_enabled) {
+        // 显示注册表单
+        showRegistrationForm();
+      } else {
+        // 显示注册已关闭的提示
+        showMessage('注册功能已关闭，请联系管理员');
+        hideRegistrationForm();
+      }
+    }
+  } catch (error) {
+    console.error('获取系统信息失败:', error);
+  }
+}
+```
+
+### 场景 3：首次配置 AI 服务
 
 用户首次使用系统，需要配置 AI 服务：
 
@@ -1001,6 +1383,39 @@ curl -X PUT "http://localhost:9090/api/v1/settings/ai" \
 
 
 ## 常见问题
+
+### Q: 如何成为管理员？
+
+A: 
+- 第一个注册的用户自动成为管理员
+- 管理员拥有系统管理权限，可以修改系统设置
+- 后续用户默认为普通用户
+- 如需提升权限，需要现有管理员通过数据库或 CLI 工具操作
+
+### Q: 如何关闭用户注册？
+
+A: 
+- 管理员登录系统获取 Token
+- 调用 PUT /api/v1/settings/system 接口
+- 设置 registration_enabled 为 false
+- 关闭后新用户无法通过注册接口创建账户
+- 管理员仍可通过 CLI 工具创建用户
+
+### Q: 关闭注册后如何添加新用户？
+
+A: 
+- 管理员可以使用 CLI 工具创建用户
+- 命令：`./bin/create-user -username <用户名> -password <密码>`
+- 或者管理员可以重新开启注册功能
+- 未来版本可能会添加管理员创建用户的 API
+
+### Q: 普通用户可以访问系统设置吗？
+
+A: 
+- 不可以，系统设置接口仅限管理员访问
+- 普通用户调用会返回 403 错误
+- 普通用户可以访问公开的系统信息接口（/api/v1/system/info）
+- 普通用户可以管理自己的个人设置（AI 配置、用户偏好）
 
 ### Q: 如何获取 OpenAI API 密钥？
 

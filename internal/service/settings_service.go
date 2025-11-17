@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/ai"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/model"
 	"github.com/Deepblue-Sky2333/Ai-Diet-Assistant/internal/repository"
 )
@@ -17,21 +16,29 @@ type SettingsService interface {
 	TestAIConnection(ctx context.Context, userID int64) error
 	GetUserPreferences(ctx context.Context, userID int64) (*model.UserPreferences, error)
 	UpdateUserPreferences(ctx context.Context, userID int64, prefs *model.UserPreferences) error
+
+	// 系统设置相关
+	IsRegistrationEnabled(ctx context.Context) (bool, error)
+	GetSystemSettings(ctx context.Context) (map[string]interface{}, error)
+	UpdateSystemSettings(ctx context.Context, settings map[string]interface{}) error
 }
 
 type settingsService struct {
-	aiSettingsRepo *repository.AISettingsRepository
-	userPrefsRepo  repository.UserPreferencesRepository
+	aiSettingsRepo     *repository.AISettingsRepository
+	userPrefsRepo      repository.UserPreferencesRepository
+	systemSettingsRepo repository.SystemSettingsRepository
 }
 
 // NewSettingsService 创建设置服务实例
 func NewSettingsService(
 	aiSettingsRepo *repository.AISettingsRepository,
 	userPrefsRepo repository.UserPreferencesRepository,
+	systemSettingsRepo repository.SystemSettingsRepository,
 ) SettingsService {
 	return &settingsService{
-		aiSettingsRepo: aiSettingsRepo,
-		userPrefsRepo:  userPrefsRepo,
+		aiSettingsRepo:     aiSettingsRepo,
+		userPrefsRepo:      userPrefsRepo,
+		systemSettingsRepo: systemSettingsRepo,
 	}
 }
 
@@ -90,38 +97,10 @@ func (s *settingsService) UpdateAISettings(ctx context.Context, userID int64, se
 }
 
 // TestAIConnection 测试 AI 连接（调用 AI Provider）
+// NOTE: This method is deprecated after removing AI provider implementations.
+// Use the message proxy service for AI interactions instead.
 func (s *settingsService) TestAIConnection(ctx context.Context, userID int64) error {
-	// 获取活跃的 AI 设置
-	settings, err := s.aiSettingsRepo.GetActiveAISettings(ctx, userID)
-	if err != nil {
-		if err == repository.ErrAISettingsNotFound {
-			return fmt.Errorf("no active AI settings found")
-		}
-		return fmt.Errorf("failed to get AI settings: %w", err)
-	}
-
-	// 创建 AI Provider
-	providerConfig := &ai.ProviderConfig{
-		Provider:    settings.Provider,
-		APIKey:      settings.APIKey,
-		APIEndpoint: settings.APIEndpoint,
-		Model:       settings.Model,
-		Temperature: settings.Temperature,
-		MaxTokens:   settings.MaxTokens,
-		Timeout:     30,
-	}
-
-	provider, err := ai.NewAIProvider(providerConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create AI provider: %w", err)
-	}
-
-	// 测试连接
-	if err := provider.TestConnection(ctx); err != nil {
-		return fmt.Errorf("AI connection test failed: %w", err)
-	}
-
-	return nil
+	return fmt.Errorf("direct AI connection testing is no longer supported - use the message proxy service instead")
 }
 
 // GetUserPreferences 获取用户偏好
@@ -247,6 +226,64 @@ func (s *settingsService) validateUserPreferences(prefs *model.UserPreferences) 
 	// 验证纤维目标
 	if prefs.DailyFiberGoal < 0 || prefs.DailyFiberGoal > 200 {
 		return fmt.Errorf("daily fiber goal must be between 0 and 200g")
+	}
+
+	return nil
+}
+
+// IsRegistrationEnabled 检查注册是否开启
+func (s *settingsService) IsRegistrationEnabled(ctx context.Context) (bool, error) {
+	value, err := s.systemSettingsRepo.GetSetting(ctx, "registration_enabled")
+	if err != nil {
+		// 如果设置不存在，默认允许注册
+		if err == repository.ErrSettingNotFound {
+			return true, nil
+		}
+		return false, fmt.Errorf("failed to get registration setting: %w", err)
+	}
+
+	return value == "true", nil
+}
+
+// GetSystemSettings 获取所有系统设置
+func (s *settingsService) GetSystemSettings(ctx context.Context) (map[string]interface{}, error) {
+	settings, err := s.systemSettingsRepo.GetAllSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get system settings: %w", err)
+	}
+
+	// 转换字符串值为适当的类型
+	result := make(map[string]interface{})
+	for key, value := range settings {
+		switch key {
+		case "registration_enabled":
+			result[key] = value == "true"
+		default:
+			result[key] = value
+		}
+	}
+
+	return result, nil
+}
+
+// UpdateSystemSettings 更新系统设置
+func (s *settingsService) UpdateSystemSettings(ctx context.Context, settings map[string]interface{}) error {
+	for key, value := range settings {
+		// 转换值为字符串存储
+		var strValue string
+		switch v := value.(type) {
+		case bool:
+			strValue = fmt.Sprintf("%t", v)
+		case string:
+			strValue = v
+		default:
+			strValue = fmt.Sprintf("%v", v)
+		}
+
+		err := s.systemSettingsRepo.UpdateSetting(ctx, key, strValue)
+		if err != nil {
+			return fmt.Errorf("failed to update setting %s: %w", key, err)
+		}
 	}
 
 	return nil
